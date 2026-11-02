@@ -1,0 +1,68 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-file/references/foreign_opinion.yaml
+# Regenerate: python3 scripts/generate.py
+name: foreign_opinion
+title: Foreign Opinion
+description: 检索外资机构/独立观点；机构观点列表仅摘要，-d 经 getDetail 下载正文；独立观点可下载 HTML。
+parameters:
+  source:
+    type: string
+    description: institution（外资机构观点）或 independent（外资独立观点）
+  keyword:
+    type: string
+    description: 搜索关键词
+  securities:
+    type: array
+    description: 证券名称或代码列表
+    items:
+      type: string
+  start_date:
+    type: string
+    description: 起始日期，格式 yyyy-MM-dd
+  end_date:
+    type: string
+    description: 结束日期，格式 yyyy-MM-dd
+  institutions:
+    type: array
+    description: institutions
+    items:
+      type: string
+  industries:
+    type: array
+    description: 行业或研究方向名称列表；可选值见 get_industries
+    items:
+      type: string
+  region_list:
+    type: array
+    description: region_list
+    items:
+      type: string
+  rating_list:
+    type: array
+    description: rating_list
+    items:
+      type: string
+  rating_change_list:
+    type: array
+    description: rating_change_list
+    items:
+      type: string
+  rank_type:
+    type: integer
+    description: 排序方式：1 综合排序，2 时间倒序
+  limit:
+    type: integer
+    description: 返回条数上限
+  download:
+    type: boolean
+    description: 是否下载：institution 下载正文 txt/zh；independent 下载 HTML
+  download_types:
+    type: array
+    description: institution 用 txt/zh；independent 用 html/html_zh
+    items:
+      type: string
+  output_dir:
+    type: string
+    description: 结果与下载文件保存目录
+  confirm:
+    type: boolean
+    description: 预计积分消耗较大时（脚本会拒绝并提示）必填 true；须先向用户说明并取得同意

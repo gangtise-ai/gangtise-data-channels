@@ -1,0 +1,78 @@
+name: opinion
+title: Opinion
+description: 检索国内机构首席观点（列表仅摘要）；支持券商、首席、题材、观点类别、投研业务标签、机构标签、来源类型等多维筛选；可选 -d 经 getDetail 下载正文。
+parameters:
+  keyword:
+    type: string
+    description: 搜索关键词
+  securities:
+    type: array
+    description: 证券名称或代码列表
+    items:
+      type: string
+  start_date:
+    type: string
+    description: 起始日期，格式 yyyy-MM-dd
+  end_date:
+    type: string
+    description: 结束日期，格式 yyyy-MM-dd
+  institutions:
+    type: array
+    description: institutions
+    items:
+      type: string
+  industries:
+    type: array
+    description: 行业或研究方向名称列表；可选值见 get_industries
+    items:
+      type: string
+  chiefs:
+    type: array
+    description: chiefs
+    items:
+      type: string
+  concepts:
+    type: array
+    description: 题材名称或 ID 列表
+    items:
+      type: string
+  categories:
+    type: array
+    description: 观点类别；英文 earningsReview/abnormalReview/researchUpdate/tradingDesk/industryAnalysis，或中文业绩点评/异动点评/调研更新/交易台/行业分析
+    items:
+      type: string
+  llm_tags:
+    type: array
+    description: 投研业务标签（推荐/业绩侧/产业链/壁垒共 28 项）；如 strongRcmd/beatExpect/highGrowth/moat，或中文强烈推荐/超预期/高增/壁垒
+    items:
+      type: string
+  broker_tags:
+    type: array
+    description: 机构标签；英文 topBroker/newFortune，或中文头部券商/新财富团队
+    items:
+      type: string
+  source_types:
+    type: array
+    description: 来源类型；英文 realTime/openSource，或中文实时/开放来源
+    items:
+      type: string
+  rank_type:
+    type: integer
+    description: 排序方式：1 综合排序，2 时间倒序
+  limit:
+    type: integer
+    description: 返回条数上限；开启 download 且未传时默认 10
+  download:
+    type: boolean
+    description: 是否下载观点正文（getDetail，按条计费）
+  download_types:
+    type: array
+    description: 下载格式，如 txt、md
+    items:
+      type: string
+  output_dir:
+    type: string
+    description: 结果与下载文件保存目录
+  confirm:
+    type: boolean
+    description: 预计积分消耗较大时（脚本会拒绝并提示）必填 true；须先向用户说明并取得同意

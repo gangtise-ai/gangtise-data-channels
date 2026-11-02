@@ -1,0 +1,9 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-agent/references/viewpoint_debate.yaml
+# Regenerate: python3 scripts/generate.py
+name: viewpoint_debate
+title: Viewpoint Debate
+description: 围绕用户给出的投资观点（不超过 1000 字）生成正反方辩论式分析，帮助检验观点完备性与潜在反驳论据。相关标的请直接写进观点文本。
+parameters:
+  viewpoint:
+    type: string
+    description: 投资观点文本，不超过 1000 字

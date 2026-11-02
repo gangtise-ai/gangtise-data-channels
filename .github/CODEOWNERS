@@ -1,0 +1,12 @@
+# Hand-edit sources
+/core/src/gangtise_core/
+/skills/openapi/*/scripts/*.py
+/skills/openapi/*/references/
+
+# Generated — do not hand-edit; python3 scripts/generate.py
+/mcp/src/_generated/
+/mcp/src/_use_generated.py
+/cli/src/_generated/
+/cli/src/_use_generated.py
+/skills/openapi/*/scripts/_generated/
+/skills/openapi/*/scripts/_launch.py

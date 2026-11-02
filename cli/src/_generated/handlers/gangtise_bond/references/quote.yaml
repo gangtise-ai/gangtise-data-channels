@@ -1,0 +1,23 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-bond/references/quote.yaml
+# Regenerate: python3 scripts/generate.py
+name: quote
+title: Quote
+description: "债券日收盘行情（交易所 + 银行间）：全价/净价 OHLC、到期收益率、成交量额、久期、凸性、应计利息等。不传日期默认近 7 日，无数据时放宽到近 30 日。"
+parameters:
+  securities:
+    type: array
+    description: "债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径（含 security_code / 债券代码 等列）"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "开始日期 yyyy-MM-dd；不传默认近 7 日，无数据时放宽到近 30 日"
+  end_date:
+    type: string
+    description: "结束日期 yyyy-MM-dd；不传默认今天"
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回常用字段，传 all 返回全部 31 个字段"
+    items:
+      type: string

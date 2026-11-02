@@ -1,0 +1,25 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-fund/references/profile.yaml
+# Regenerate: python3 scripts/generate.py
+name: profile
+title: Profile
+description: "基金档案：基本信息（类型、管理人、成立日、申赎规则、业绩基准、跟踪指数等）、费率（申购/赎回/管理/托管/销售服务费）、历任基金经理及任职回报。query_type 选择查询内容，默认 basic。"
+parameters:
+  securities:
+    type: array
+    description: "基金代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true
+  query_type:
+    type: string
+    description: "basic(基本信息) / fee(费率) / manager(历任基金经理)，逗号分隔；all 三项都查"
+  fee_types:
+    type: array
+    description: "费率类型，逗号分隔：purchaseFee/redemptionFee/managementFee/custodianFee/saleFee；不传返回全部"
+    items:
+      type: string
+  field_list:
+    type: array
+    description: "仅基本信息：字段英文名或中文名，逗号分隔；不传返回全部，传 all 同样返回全部"
+    items:
+      type: string

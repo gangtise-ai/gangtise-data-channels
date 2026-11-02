@@ -1,0 +1,23 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-bond/references/exercise_notice.yaml
+# Regenerate: python3 scripts/generate.py
+name: exercise_notice
+title: ExerciseNotice
+description: "含权债行权提示：回售、赎回、调整票面利率等行权条款与行权日期安排。"
+parameters:
+  securities:
+    type: array
+    description: "债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径（含 security_code / 债券代码 等列）"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "行权日起始 yyyy-MM-dd；不传不限"
+  end_date:
+    type: string
+    description: "行权日截止 yyyy-MM-dd；不传不限"
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回全部 11 个字段"
+    items:
+      type: string

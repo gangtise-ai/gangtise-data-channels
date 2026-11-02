@@ -1,0 +1,53 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-private/references/wechat_message.yaml
+# Regenerate: python3 scripts/generate.py
+name: wechat_message
+title: Wechat Message
+description: 检索已绑定微信群列表，或拉取群聊消息。提供 wechat_group_id_list 时拉取指定群消息；未传 room_name 但传了时间/行业/类别/标签筛选时拉取全部可访问群的消息。需已激活群消息助理。
+parameters:
+  mode:
+    type: string
+    description: search 检索群列表；get 拉取群消息（不传群 ID 时为全部可访问群）。不传时自动判断
+    enum:
+      - search
+      - get
+  room_name:
+    type: string
+    description: 群名称，逗号分隔（search → roomName）
+  keyword:
+    type: string
+    description: search：未传 room_name 时作群名，或与 room_name 并用作群列表过滤；get：消息内容关键词
+  wechat_group_id_list:
+    type: array
+    description: 群 ID 或群名，逗号分隔（提供后自动 get）
+    items:
+      type: string
+  page_from:
+    type: integer
+    description: 分页；page-size 最大 50
+  page_size:
+    type: integer
+    description: 分页；page-size 最大 50
+  start_time:
+    type: string
+    description: "起始时间，格式 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss"
+  end_time:
+    type: string
+    description: "结束时间，格式 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss"
+  industry_id_list:
+    type: array
+    description: 行业 ID 列表
+    items:
+      type: string
+  category_list:
+    type: array
+    description: text,image,documents,url（get）
+    items:
+      type: string
+  tag_list:
+    type: array
+    description: 标签代码或中文（如 路演→roadShow）（get）
+    items:
+      type: string
+  limit:
+    type: integer
+    description: search：最多返回群数（默认 50）；get：最多消息条数（默认 500）

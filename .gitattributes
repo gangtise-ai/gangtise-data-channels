@@ -1,0 +1,5 @@
+# Generated copies of core/handlers — hide from language stats / review noise
+**/_generated/** linguist-generated=true
+**/scripts/_launch.py linguist-generated=true
+mcp/src/_use_generated.py linguist-generated=true
+cli/src/_use_generated.py linguist-generated=true

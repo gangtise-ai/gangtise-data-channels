@@ -1,0 +1,21 @@
+{
+  "summary": "在 Gangtise 内部知识库做向量检索，返回相关文本片段；需按类型/日期筛文件列表时用 gangtise-file。",
+  "installation_instructions": "通过 https://gts-download.obs.cn-east-3.myhuaweicloud.com/skills/gangtise-kb.zip 下载解压，并复制到 skills/ 目录下；需配置 GTS_ACCESS_KEY / GTS_SECRET_KEY。",
+  "keywords": [
+    "知识库检索",
+    "内部研报",
+    "会议纪要",
+    "观点检索",
+    "向量搜索",
+    "文本片段",
+    "gangtise kb"
+  ],
+  "example_prompts": [
+    "内部研报和纪要里，关于新能源汽车销量和政策最近都怎么说的？",
+    "只要外资研报，帮我搜一下「新能源汽车销量与政策」相关段落，十来条就够。"
+  ],
+  "when_not_to_use": [
+    "需要按类型/日期/证券筛选文件列表并下载核验时，改用 gangtise-file",
+    "需要完整结论或全文上下文时，不宜仅依赖 kb 片段"
+  ]
+}

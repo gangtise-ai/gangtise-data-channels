@@ -1,0 +1,25 @@
+[project]
+name = "gangtise-data-channels"
+version = "0.1.0"
+description = "Gangtise skills, unified MCP, and unified CLI."
+requires-python = ">=3.10"
+license = "MIT"
+readme = "README.md"
+authors = [{ name = "Gangtise" }]
+dependencies = [
+    "gangtise-core",
+    "gangtise-mcp",
+    "gangtise-cli",
+]
+
+[tool.uv.workspace]
+members = ["core", "mcp", "cli"]
+
+[tool.uv.sources]
+gangtise-core = { workspace = true }
+gangtise-mcp = { workspace = true }
+gangtise-cli = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

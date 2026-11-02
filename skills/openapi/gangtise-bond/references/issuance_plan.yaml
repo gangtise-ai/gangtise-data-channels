@@ -1,0 +1,15 @@
+name: issuance_plan
+title: IssuancePlan
+description: "利率债发行计划：国债、地方债、政策性金融债等的计划发行日期与规模。不传日期默认今天起 30 天。"
+parameters:
+  start_date:
+    type: string
+    description: "发行日期起始 yyyy-MM-dd；不传默认今天"
+  end_date:
+    type: string
+    description: "发行日期截止 yyyy-MM-dd；不传默认今天起 30 天"
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回全部 9 个字段"
+    items:
+      type: string

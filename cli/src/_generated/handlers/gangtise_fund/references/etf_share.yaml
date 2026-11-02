@@ -1,0 +1,18 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-fund/references/etf_share.yaml
+# Regenerate: python3 scripts/generate.py
+name: etf_share
+title: EtfShare
+description: "ETF 份额变动：每日基金份额、份额变动与规模，用于判断净申购/净赎回。不传日期默认近 7 日，无数据时放宽到近 30 日。"
+parameters:
+  securities:
+    type: array
+    description: "ETF代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "开始日期 yyyy-MM-dd；不传默认近 7 日，无数据时放宽到近 30 日"
+  end_date:
+    type: string
+    description: "结束日期 yyyy-MM-dd；不传默认今天"

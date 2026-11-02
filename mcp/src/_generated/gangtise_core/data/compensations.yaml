@@ -1,0 +1,38 @@
+# Compensations that paper over server behavior. No server_ticket → do not add handler special cases.
+# --verbose prints compensated: <id> when an applies endpoint is used.
+
+compensations:
+  - id: C-001
+    title: EDE 端点 999999 不按「无数据」重试
+    applies:
+      - indicator.cross-section
+      - indicator.time-series
+    reason: 服务端曾以 HTTP 500 + 999999 表示无数据（实测 2026-07-11），2026-08-01 起改为 null 单元格；999999 现仅表示故障。
+    server_ticket: OPENAPI-pending
+    sunset: 服务端确认 999999 仅表示故障后移除本条（重试策略已用 no-replay 覆盖计费端点）
+  - id: C-002
+    title: 连续 loginV2 互踢，token 按指纹落盘
+    applies: ["*"]
+    reason: 0000001008 / 999002 连续登录会互相踢掉会话。
+    server_ticket: OPENAPI-pending
+    sunset: 服务端会话模型改为无互踢后可缩短缓存
+  - id: C-003
+    title: 计费下载与 EDE 取数 5xx 不重放
+    applies:
+      - indicator.time-series
+      - indicator.cross-section
+      - indicator.edb-get-data
+      - screener.run
+      - insight.summary.download
+      - insight.report.download
+      - insight.announcement.download
+      - insight.foreign-report.download
+      - insight.pamirs.download
+      - insight.official-account.download
+      - kb.resource.download
+      - vault.conference.download
+      - vault.record.download
+      - vault.drive.download
+    reason: 贵档端点 5xx 之后重放可能重复扣费（TS v0.26.0 实测）。
+    server_ticket: OPENAPI-pending
+    sunset: 服务端提供幂等 token 后改为有限重试

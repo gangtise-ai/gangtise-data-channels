@@ -1,0 +1,29 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-bond/references/valuation.yaml
+# Regenerate: python3 scripts/generate.py
+name: valuation
+title: Valuation
+description: "上清所估值：估值净价/全价、估值收益率、修正久期、凸性、可信度等。不传日期默认近 7 日，无数据时放宽到近 30 日。"
+parameters:
+  securities:
+    type: array
+    description: "债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径（含 security_code / 债券代码 等列）"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "估值日期起始 yyyy-MM-dd；不传默认近 7 日，无数据时放宽到近 30 日"
+  end_date:
+    type: string
+    description: "估值日期截止 yyyy-MM-dd；不传默认今天"
+  confidence_level:
+    type: string
+    description: "估值可信度筛选；不传由接口按「推荐」处理"
+    enum:
+      - "推荐"
+      - "不推荐"
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回常用字段，传 all 返回全部 20 个字段"
+    items:
+      type: string

@@ -1,0 +1,20 @@
+name: main_business
+title: Main Business
+description: 查询上市公司主营构成，按产品/行业/地区等维度拆分，支持报告期 Q2/Q4，输出 CSV。
+parameters:
+  securities:
+    type: string
+    description: 逗号分隔的证券名称/代码/拼音；亦可传 .csv 路径（须存在且后缀为 .csv，读 security_code / code / 代码 / security_abbr 列）
+    required: true
+  start_date:
+    type: string
+    description: 开始日期 yyyy-MM-dd。未指定时默认约为结束日往前三年
+  end_date:
+    type: string
+    description: 结束日期 yyyy-MM-dd。未指定时默认今天
+  period:
+    type: string
+    description: 仅 Q2（中报）或 Q4（年报）；不传则不限定报告期
+  breakdown:
+    type: string
+    description: product / industry / region。不传则三种维度并发全取

@@ -1,0 +1,5 @@
+{
+  "name": "gangtise-agent",
+  "summary": "通过 Gangtise Agent OpenAPI 拉取一页通、投资逻辑、同业对比、绩点评、主题跟踪、调研提纲、热点话题、管理层情绪等 Markdown 投研文本。",
+  "description": "通过 Gangtise Agent OpenAPI 统一拉取 Markdown 投研文本。 各 Agent 能力概览：one-pager（公司一页通，单票核心要素与结论浓缩）； investment-logic（投资逻辑，主线叙事与关键假设）； peer-comparison（同业对比，竞争格局与可比公司差异）； earnings-review（业绩点评，财报期业绩解读；需 getId 后轮询 getContent，最长约 600s）； viewpoint-debate（观点 PK，对给定观点的正反辨析与论据组织；同样异步轮询）； theme-tracking（主题跟踪，晨报/晚报式产业链与主题脉络）； research-outline（调研提纲，公司调研问题与访谈框架）； stock-one-line-summary（个股一句话总结，A 股/港股个股批量最新一句话投研摘要）； hot-topic-list（热点话题报告列表，按日期与报告类型分页拉取结构化热点，输出为多级 Markdown；核心标的为表格）； security-clue-list（投研线索列表，按证券/行业+时间范围提取研报、电话会议、公告、观点等结构化线索，输出为 Markdown 表格）； management-sentiment（公司管理层情绪，-t 切换指标/结论/问答明细，输出为组装后的 Markdown）。 返回多为可直接引用的结论文本，适合纪要、速览、投研助理与 Agent 编排中的事实与观点补充。注意不要只调用gangtise-agent，这些投研文本是定期更新的，时效性不足，建议额外调用其他skills进行补充。"
+}

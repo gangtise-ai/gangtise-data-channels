@@ -1,0 +1,17 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-agent/references/earnings_review.yaml
+# Regenerate: python3 scripts/generate.py
+name: earnings_review
+title: Earnings Review
+description: 针对指定报告期（如 2026interim）生成业绩点评：收入利润拆解、超预期/低于预期点、管理层表述与后续展望。需同时提供证券与 period。
+parameters:
+  security:
+    type: string
+    description: 单个证券名称或代码（推荐名称，如 贵州茅台；或代码 600519.SH）
+  securities:
+    type: array
+    description: 多个证券名称或代码，逗号分隔；与 security 可同时使用并去重合并
+    items:
+      type: string
+  period:
+    type: string
+    description: 报告期，年份+q1/interim/q3/annual，如 2026q1、2026interim（中报）、2025annual（年报）；也接受 2026q2、2026h1、2025q4 等写法并自动转换

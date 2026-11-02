@@ -1,0 +1,20 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-agent/references/theme_tracking.yaml
+# Regenerate: python3 scripts/generate.py
+name: theme_tracking
+title: Theme Tracking
+description: 按主题 ID 或中文主题名追踪题材资讯（晨报/晚报等），返回指定日期的跟踪内容。主题名不唯一时会返回候选列表供确认。
+parameters:
+  theme_id:
+    type: string
+    description: 主题 ID 或中文主题名；名称不唯一时返回候选列表
+    required: true
+  date:
+    type: string
+    description: 查询日期，格式 yyyy-MM-dd
+    required: true
+  types:
+    type: array
+    description: 资讯类型列表：morning（晨报）、night（晚报）
+    required: true
+    items:
+      type: string

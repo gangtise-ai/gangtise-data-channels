@@ -1,0 +1,81 @@
+# Local test image: MCP HTTP service + `gangtise` CLI in one container.
+#
+# From repo root (scripts/docker_test.sh does all of this):
+#   python3 scripts/generate.py
+#   docker build -t gangtise-data-channels:test -f Dockerfile.test .
+#   docker run -d --name gangtise-test -p 8000:8000 \
+#     -e GTS_ACCESS_KEY=... -e GTS_SECRET_KEY=... gangtise-data-channels:test
+#   curl http://127.0.0.1:8000/health
+#   docker exec gangtise-test gangtise --version
+#
+# Not for production (see mcp/Dockerfile): auth is off by default and both
+# packages share one image. MCP runs from /opt/mcp (mcp/ only); the CLI is a
+# regular pip install of cli/ and resolves its own bundled _generated core.
+#
+# Without Docker Hub access, any local Python 3.10+ image works as the base,
+# e.g. --build-arg BASE_IMAGE=gangtise-mcp:latest (its old /opt/mcp/src is replaced).
+
+ARG BASE_IMAGE=python:3.11-slim
+FROM ${BASE_IMAGE}
+
+ARG PIP_INDEX_URL=
+ARG PIP_TRUSTED_HOST=
+
+# PYTHONPATH is deliberately unset here: the entrypoint exports MCP's path for
+# the server process only, so `docker exec ... gangtise` never imports mcp/ code.
+ENV PYTHONPATH= \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    MCP_TRANSPORT=http \
+    MCP_HOST=0.0.0.0 \
+    MCP_PORT=8000 \
+    MCP_LAYOUT=unified \
+    MCP_PATH=/ \
+    SUBPATHS= \
+    MCP_STATELESS=true \
+    MCP_JSON_RESPONSE=true \
+    MCP_REQUIRE_AUTH=false \
+    GTS_SAVE_FILE=False \
+    WORK_PATH=/opt/data \
+    GTS_MCP_ROOT=/opt/mcp \
+    TOOL_URL_DEPS_PATH=/opt/mcp/tool_url_deps.json \
+    GTS_TOKEN_CACHE_PATH=/opt/data/auth_token_cache.json \
+    TZ=Asia/Shanghai
+
+WORKDIR /app
+
+COPY mcp /app/mcp
+COPY cli /app/cli
+COPY mcp/entrypoint.sh /entrypoint.sh
+
+RUN set -eux; \
+    PIP_OPTS=""; \
+    if [ -n "${PIP_INDEX_URL}" ]; then PIP_OPTS="${PIP_OPTS} -i ${PIP_INDEX_URL}"; fi; \
+    if [ -n "${PIP_TRUSTED_HOST}" ]; then PIP_OPTS="${PIP_OPTS} --trusted-host ${PIP_TRUSTED_HOST}"; fi; \
+    test -d /app/mcp/src/_generated/gangtise_core; \
+    test -d /app/cli/src/_generated/gangtise_core; \
+    chmod +x /entrypoint.sh; \
+    rm -rf /opt/mcp/src; \
+    mkdir -p /opt/data /opt/mcp; \
+    cp /app/mcp/tool_url_deps.json /opt/mcp/tool_url_deps.json 2>/dev/null || true; \
+    pip install ${PIP_OPTS} \
+        "mcp>=1.0.0,<2" \
+        "uvicorn>=0.30.0" \
+        "httpx>=0.27.0" \
+        "requests>=2.32.5" \
+        "pandas>=2.2.3" \
+        "pyyaml>=6.0" \
+        "starlette>=0.37.0" \
+        "PyJWT>=2.8.0" \
+        "cryptography>=42.0.0"; \
+    pip install --no-deps --target /opt/mcp/src ${PIP_OPTS} /app/mcp; \
+    pip install ${PIP_OPTS} /app/cli; \
+    command -v gangtise; \
+    gangtise --version
+
+EXPOSE 8000
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200 else 1)"
+ENTRYPOINT ["/entrypoint.sh"]

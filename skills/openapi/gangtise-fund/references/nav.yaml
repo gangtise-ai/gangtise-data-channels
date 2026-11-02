@@ -1,0 +1,16 @@
+name: nav
+title: Nav
+description: "基金净值表现：单位净值、累计净值、复权净值，货币基金的 7 日年化收益率与万份收益。不传日期默认近 7 日，无数据时放宽到近 30 日。"
+parameters:
+  securities:
+    type: array
+    description: "基金代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "开始日期 yyyy-MM-dd；不传默认近 7 日，无数据时放宽到近 30 日"
+  end_date:
+    type: string
+    description: "结束日期 yyyy-MM-dd；不传默认今天"

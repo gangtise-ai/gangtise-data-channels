@@ -1,0 +1,24 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-fund/references/portfolio.yaml
+# Regenerate: python3 scripts/generate.py
+name: portfolio
+title: Portfolio
+description: "基金持仓明细（定期报告）：持股明细（默认，重仓或全部）、持债明细、持基明细。query_type 选择明细类型。"
+parameters:
+  securities:
+    type: array
+    description: "基金代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true
+  query_type:
+    type: string
+    description: "stock(持股明细) / bond(持债明细) / fund(持基明细)，逗号分隔；all 全部"
+  start_date:
+    type: string
+    description: "报告期开始 yyyy-MM-dd；不传则不限制"
+  end_date:
+    type: string
+    description: "报告期结束 yyyy-MM-dd；不传则不限制"
+  position_type:
+    type: string
+    description: "仅持股明细：top(重仓，接口默认) / all(全部持股，仅半年报与年报)"

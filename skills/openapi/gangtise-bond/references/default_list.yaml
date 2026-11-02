@@ -1,0 +1,25 @@
+name: default_list
+title: Default List
+description: "违约债券列表：按违约日期查全市场，或按债券、单个发行人全称查询历史违约记录。返回债券代码、简称、违约日期、违约金额、发行人与违约原因。"
+parameters:
+  securities:
+    type: array
+    description: "债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径。与 issuers 互斥；同时给日期时在本地按违约日期过滤"
+    items:
+      type: string
+  issuers:
+    type: array
+    description: "发债主体全称或简称。全称精确匹配；简称只在唯一命中时换成全称，多家全部列出供确认。与 securities 互斥"
+    items:
+      type: string
+  start_date:
+    type: string
+    description: "违约日期起始 yyyy-MM-dd。不传债券和主体时，与 end_date 都不传则默认近 7 日"
+  end_date:
+    type: string
+    description: "违约日期截止 yyyy-MM-dd。全市场查询超过 1 个自然年时自动按年拆分"
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回全部 6 个字段"
+    items:
+      type: string

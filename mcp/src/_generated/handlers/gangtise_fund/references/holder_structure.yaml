@@ -1,0 +1,18 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-fund/references/holder_structure.yaml
+# Regenerate: python3 scripts/generate.py
+name: holder_structure
+title: HolderStructure
+description: "基金持有人结构：机构、个人、员工持有份额与占比，以及持有人户数。"
+parameters:
+  securities:
+    type: array
+    description: "基金代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "报告期开始 yyyy-MM-dd；不传则不限制"
+  end_date:
+    type: string
+    description: "报告期结束 yyyy-MM-dd；不传则不限制"

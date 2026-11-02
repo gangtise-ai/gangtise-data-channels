@@ -1,0 +1,21 @@
+name: issuance
+title: Issuance
+description: "债券发行与增发明细：发行公告日、发行规模、票面利率、发行价格、主承销商等。"
+parameters:
+  securities:
+    type: array
+    description: "债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径（含 security_code / 债券代码 等列）"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "发行公告日起始 yyyy-MM-dd；不传返回全部记录"
+  end_date:
+    type: string
+    description: "发行公告日截止 yyyy-MM-dd；不传返回全部记录"
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回全部 16 个字段"
+    items:
+      type: string

@@ -1,0 +1,39 @@
+name: web_search
+title: WebSearch
+description: "联网搜索公开互联网：返回经转载去重和信源分级（T0 官方一手 / T1 权威媒体 / T2 财经平台 / T3 其他）的标题、摘要、链接，可选拉取网页正文。适用于最新公开新闻、政策与监管原文、指定站点检索和传闻核实。服务端不改写检索词，限定站点请用 site_list。"
+parameters:
+  query:
+    type: string
+    description: "检索词，去空格后 1–200 字"
+    required: true
+  size:
+    type: integer
+    description: "返回条数上限，1–20；include_content=true 时 1–5。不传由服务端默认 10"
+  freshness:
+    type: string
+    description: "时效窗口：day 近 1 日 / week 近 7 日 / month 近 30 日 / none 不限"
+    enum:
+      - "day"
+      - "week"
+      - "month"
+      - "none"
+  min_tier:
+    type: string
+    description: "最低信源等级。T3 或不传表示不过滤；T0 只要官方，T1 含权威媒体"
+    enum:
+      - "T0"
+      - "T1"
+      - "T2"
+      - "T3"
+  site_list:
+    type: array
+    description: "定向站点，逗号分隔的注册域或子域，最多 10 个。不要带协议和路径"
+    items:
+      type: string
+  include_content:
+    type: boolean
+    description: "返回网页正文；开启后 size 上限为 5"
+    default: false
+  max_content_chars:
+    type: integer
+    description: "单条正文最大字符数，1000–20000，仅 include_content=true 时生效"

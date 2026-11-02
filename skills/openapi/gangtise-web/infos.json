@@ -1,0 +1,24 @@
+{
+  "summary": "对公开互联网做投研定向检索，返回经转载去重和信源分级后的网页结果，并可按需拉取正文。",
+  "installation_instructions": "通过 https://gts-download.obs.cn-east-3.myhuaweicloud.com/skills/gangtise-web.zip 下载解压，并复制到 skills/ 目录下；需配置 GTS_ACCESS_KEY / GTS_SECRET_KEY。",
+  "keywords": [
+    "联网搜索",
+    "公开网页",
+    "新闻",
+    "政策原文",
+    "监管站点",
+    "信源分级",
+    "传闻核实",
+    "web search"
+  ],
+  "example_prompts": [
+    "帮我在公开网上查一下宁德时代 2026 年半年报营收和净利润，优先官方和权威媒体。",
+    "证监会和交易所站点上，减持新规原文是怎么说的？把正文拉下来。",
+    "最近一周券商合并传闻有没有官方辟谣或公司回应？"
+  ],
+  "when_not_to_use": [
+    "查内部研报、纪要、公告或知识库片段时，改用 gangtise-file / gangtise-kb",
+    "查行情、财务、估值等结构化数据时，改用 gangtise-data",
+    "按指标条件选股时，改用 gangtise-screener"
+  ]
+}

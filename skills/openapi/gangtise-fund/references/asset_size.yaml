@@ -1,0 +1,16 @@
+name: asset_size
+title: AssetSize
+description: "基金资产规模：各报告期份额变动（期初/申购/赎回/期末份额）与资产净值。"
+parameters:
+  securities:
+    type: array
+    description: "基金代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "报告期开始 yyyy-MM-dd；不传则不限制"
+  end_date:
+    type: string
+    description: "报告期结束 yyyy-MM-dd；不传则不限制"

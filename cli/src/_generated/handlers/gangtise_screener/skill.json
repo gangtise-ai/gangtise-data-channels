@@ -1,0 +1,5 @@
+{
+  "name": "gangtise-screener",
+  "summary": "条件选股。把口语化的选股需求（板块范围 + 指标条件）翻译成 Gangtise 指标选股 HTTP 请求并给出命中名单。",
+  "description": "条件选股。把口语化的选股需求（板块范围 + 指标条件）翻译成 Gangtise 指标选股 HTTP 请求并给出命中名单。触发词：选股 / 筛股 / 条件选股 / 帮我筛 / 找出…的股票 / 哪些股票…、以及任何「在某板块里按指标筛」的提问。不适用于单只股票的取数（走 gangtise-data 的 financial/quote 等）、排名类需求（screener 只过滤不排序）。"
+}

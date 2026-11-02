@@ -1,0 +1,15 @@
+name: rating
+title: Rating
+description: "债券评级一览：债项、发行人、担保人的最新评级与评级机构。"
+parameters:
+  securities:
+    type: array
+    description: "债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径。接口单次上限 10 只，超出自动分批"
+    items:
+      type: string
+    required: true
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回全部 19 个字段"
+    items:
+      type: string

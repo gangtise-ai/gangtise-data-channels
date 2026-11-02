@@ -1,0 +1,379 @@
+# Endpoint knowledge. Edit here; do not copy retry/destructive flags into handlers.
+# path is matched as a suffix of the request URL.
+
+quote.day-kline:
+  method: POST
+  path: /kline/daily
+  expects: table
+  timeout_s: 300
+  max_limit: 10000
+  tool: quote
+quote.index-day-kline:
+  method: POST
+  path: /index/kline/daily
+  expects: table
+  timeout_s: 300
+  tool: quote
+quote.hk-day-kline:
+  method: POST
+  path: /kline-hk/daily
+  expects: table
+  timeout_s: 300
+  tool: quote
+quote.us-day-kline:
+  method: POST
+  path: /kline-us/daily
+  expects: table
+  timeout_s: 300
+  tool: quote
+quote.minute-kline:
+  method: POST
+  path: /kline/minute
+  expects: table
+  timeout_s: 300
+  tool: quote
+quote.realtime:
+  method: POST
+  path: /quote/realtime
+  expects: table
+  timeout_s: 120
+  tool: quote
+quote.adjust-factor:
+  method: POST
+  path: /adjustFactor
+  expects: table
+  timeout_s: 300
+  tool: quote
+quote.fund-flow:
+  method: POST
+  path: /fund-flow/daily
+  expects: table
+  timeout_s: 300
+  tool: fund_flow
+
+fundamental.earning-forecast:
+  method: POST
+  path: /earning-forecast
+  expects: table
+  timeout_s: 300
+  tool: earning_forecast
+fundamental.top-holders:
+  method: POST
+  path: /capital-structure/top-holders
+  expects: table
+  timeout_s: 300
+  tool: shareholder
+fundamental.income-accumulated:
+  method: POST
+  path: /financial-report/income-statement/accumulated
+  expects: table
+  timeout_s: 300
+  tool: financial
+fundamental.income-quarterly:
+  method: POST
+  path: /financial-report/income-statement/quarterly
+  expects: table
+  timeout_s: 300
+  tool: financial
+fundamental.main-business:
+  method: POST
+  path: /main-business
+  expects: table
+  timeout_s: 300
+  tool: main_business
+fundamental.valuation:
+  method: POST
+  path: /valuation-analysis
+  expects: table
+  timeout_s: 300
+  tool: valuation
+
+# Bond endpoints bill per call; a replayed 5xx/timeout/999999 bills again.
+bond.basic-info:
+  method: POST
+  path: /bond/basic-info
+  retry: no-replay
+  tool: bond_basic_info
+bond.issuer-info:
+  method: POST
+  path: /bond/issuer-info
+  retry: no-replay
+  tool: bond_issuer_info
+bond.daily-quote:
+  method: POST
+  path: /bond/daily-quote-exchange-cfets
+  retry: no-replay
+  tool: bond_quote
+bond.valuation:
+  method: POST
+  path: /bond/valuation-shclearing
+  retry: no-replay
+  tool: bond_valuation
+bond.cash-flow:
+  method: POST
+  path: /bond/cash-flow
+  retry: no-replay
+  tool: bond_cash_flow
+bond.announcement:
+  method: POST
+  path: /bond/announcement
+  retry: no-replay
+  tool: bond_announcement
+bond.issuance-detail:
+  method: POST
+  path: /bond/issuance-detail
+  retry: no-replay
+  tool: bond_issuance
+bond.rating-overview:
+  method: POST
+  path: /bond/rating-overview
+  retry: no-replay
+  tool: bond_rating
+bond.rating-change:
+  method: POST
+  path: /bond/rating-change
+  retry: no-replay
+  tool: bond_rating_change
+bond.issuer-rating-change:
+  method: POST
+  path: /bond/issuer-rating-change
+  retry: no-replay
+  tool: bond_issuer_rating_change
+bond.issuance-plan:
+  method: POST
+  path: /bond/issuance-plan
+  retry: no-replay
+  tool: bond_issuance_plan
+bond.exercise-notice:
+  method: POST
+  path: /bond/exercise-notice
+  retry: no-replay
+  tool: bond_exercise_notice
+bond.default-list:
+  method: POST
+  path: /bond/default-list
+  retry: no-replay
+  tool: bond_default_list
+
+indicator.search:
+  method: POST
+  path: /EDE/search
+  retry: no-999999
+  timeout_s: 120
+  tool: company_indicator
+indicator.time-series:
+  method: POST
+  path: /EDE/time-series
+  retry: no-999999
+  timeout_s: 300
+  tool: company_indicator
+indicator.cross-section:
+  method: POST
+  path: /EDE/cross-section
+  retry: no-999999
+  timeout_s: 300
+  tool: company_indicator
+indicator.edb-get-data:
+  method: POST
+  path: /EDB/getData
+  retry: no-replay
+  timeout_s: 300
+  tool: industry_indicator
+screener.run:
+  method: POST
+  path: /screener
+  retry: no-999999
+  timeout_s: 300
+  tool: screener
+
+concept.v2-info:
+  method: POST
+  path: /concept/v2/info
+  timeout_s: 120
+  tool: concept
+concept.v2-securities:
+  method: POST
+  path: /concept/v2/securities
+  timeout_s: 120
+  tool: concept
+
+# getDetail bills per returned body, up to 20 IDs per call: a replayed batch bills again.
+insight.opinion.detail:
+  method: POST
+  path: /chief-opinion/getDetail
+  retry: no-replay
+  tool: get_file
+insight.foreign-opinion.detail:
+  method: POST
+  path: /foreign-opinion/getDetail
+  retry: no-replay
+  tool: get_file
+insight.summary.download:
+  method: GET
+  path: /summary/v2/download/file
+  kind: download
+  retry: no-replay
+  tool: summary
+insight.report.download:
+  method: GET
+  path: /broker-report/download/file
+  kind: download
+  retry: no-replay
+  tool: report
+insight.announcement.download:
+  method: GET
+  path: /announcement/download/file
+  kind: download
+  retry: no-replay
+  tool: announcement
+insight.foreign-report.download:
+  method: GET
+  path: /foreign-report/download/file
+  kind: download
+  retry: no-replay
+  tool: foreign_report
+insight.pamirs.download:
+  method: GET
+  path: /pamirs-summary/download/file
+  kind: download
+  retry: no-replay
+  tool: pamirs_summary
+insight.official-account.download:
+  method: GET
+  path: /officialAccount/download/file
+  kind: download
+  retry: no-replay
+  tool: official_account
+kb.resource.download:
+  method: GET
+  path: /ai/resource/download
+  kind: download
+  retry: no-replay
+  tool: get_file
+
+# `mode` ties an endpoint to the handler's `mode` argument (multi-mode tools).
+vault.stock-pool.list:
+  method: POST
+  path: /stock-pool/getPoolList
+  tool: stockpool
+  mode: search
+vault.stock-pool.stocks:
+  method: POST
+  path: /stock-pool/getStockList
+  tool: stockpool
+  mode: get
+vault.stock-pool.create:
+  method: POST
+  path: /stock-pool/createPool
+  retry: no-replay
+  tool: stockpool
+  mode: create
+vault.stock-pool.rename:
+  method: POST
+  path: /stock-pool/updatePool
+  tool: stockpool
+  mode: rename
+vault.stock-pool.add:
+  method: POST
+  path: /stock-pool/addStock
+  item_failures: true
+  tool: stockpool
+  mode: add_stock
+vault.stock-pool.remove:
+  method: POST
+  path: /stock-pool/deleteStock
+  item_failures: true
+  tool: stockpool
+  mode: delete_stock
+vault.stock-pool.delete:
+  method: POST
+  path: /stock-pool/deletePool
+  retry: no-replay
+  item_failures: true
+  tool: stockpool
+  mode: delete
+  destructive:
+    warning: 删除股票池会同时移除池内全部证券的关注关系，且不可恢复（投资笔记不受影响）；先用 stockpool search 核对 ID 对应的池名，经用户确认后加 --yes 重试。
+vault.conference.download:
+  method: GET
+  path: /my-conference/download/file
+  kind: download
+  retry: no-replay
+  tool: private_meeting
+vault.record.download:
+  method: GET
+  path: /record/download/file
+  kind: download
+  retry: no-replay
+  tool: private_record
+vault.drive.list:
+  method: POST
+  path: /drive/getList
+  timeout_s: 300
+  tool: private_cloud
+  mode: search
+vault.drive.download:
+  method: GET
+  path: /drive/download/file
+  kind: download
+  retry: no-replay
+  tool: private_cloud
+  mode: get
+vault.drive.folder-list:
+  method: POST
+  path: /drive/getFolderList
+  tool: private_cloud
+  mode: folder_list
+vault.drive.upload:
+  method: POST
+  path: /drive/uploadFile
+  retry: no-replay
+  timeout_s: 600
+  tool: private_cloud
+  mode: upload
+vault.drive.create-folder:
+  method: POST
+  path: /drive/createFolder
+  retry: no-replay
+  tool: private_cloud
+  mode: create_folder
+vault.drive.rename:
+  method: POST
+  path: /drive/rename
+  tool: private_cloud
+  mode: rename
+vault.drive.move-file:
+  method: POST
+  path: /drive/moveFile
+  item_failures: true
+  tool: private_cloud
+  mode: move_file
+vault.drive.move-folder:
+  method: POST
+  path: /drive/moveFolder
+  tool: private_cloud
+  mode: move_folder
+vault.drive.copy:
+  method: POST
+  path: /drive/copy
+  retry: no-replay
+  item_failures: true
+  tool: private_cloud
+  mode: copy
+vault.drive.delete-file:
+  method: POST
+  path: /drive/deleteFile
+  retry: no-replay
+  item_failures: true
+  tool: private_cloud
+  mode: delete_file
+  destructive:
+    warning: 删除的云盘文件无法恢复；先用 private_cloud search 核对文件 ID 对应的文件名，经用户确认后加 --yes 重试。
+vault.drive.delete-folder:
+  method: POST
+  path: /drive/deleteFolder
+  retry: no-replay
+  tool: private_cloud
+  mode: delete_folder
+  destructive:
+    warning: 删除文件夹会连同其中全部子文件夹与文件一起删除，且无法恢复；先用 private_cloud folder_list 看清里面有什么，经用户确认后加 --yes 重试。

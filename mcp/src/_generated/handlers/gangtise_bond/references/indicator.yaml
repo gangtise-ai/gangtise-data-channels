@@ -1,0 +1,27 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-bond/references/indicator.yaml
+# Regenerate: python3 scripts/generate.py
+name: indicator
+title: Indicator
+description: |
+  检索或拉取债券相关公司指标（EDE）。只接受债券。keyword 检索指标；indicator_codes 与 securities 一起传入则取数。财报截面日期用季度末；日频行情不含当天实时。
+parameters:
+  keyword:
+    type: string
+    description: 检索关键词，如「资产合计」「营业收入」
+  indicator_codes:
+    type: string
+    description: 指标编码或名称，逗号分隔；提供后与 securities 一并取数
+  securities:
+    type: array
+    description: 债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径
+    items:
+      type: string
+  start_date:
+    type: string
+    description: 开始日期 yyyy-MM-dd。财报截面通常为季度末；日频默认近一年
+  end_date:
+    type: string
+    description: 结束日期 yyyy-MM-dd。日频不含当天实时
+  params:
+    type: object
+    description: "JSON 参数。根级为全局参数，嵌套指标编码可单独覆盖"

@@ -1,0 +1,24 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-bond/references/security.yaml
+# Regenerate: python3 scripts/generate.py
+name: security
+title: Security
+description: "债券代码检索：按债券简称、代码或拼音查候选代码（默认只查债券类）。其他债券 function 已内置解析，一般无需先调用。"
+parameters:
+  keyword:
+    type: string
+    description: "搜索关键词（债券简称、代码、拼音等）"
+    required: true
+  category:
+    type: array
+    description: "证券品类，逗号分隔：bond / stock / dr / index / fund；传 all 查全部品类"
+    items:
+      type: string
+    default: "bond"
+  top:
+    type: integer
+    description: "请求接口返回条数上限（1–10）"
+    default: 10
+  output_limit:
+    type: integer
+    description: "输出条数上限"
+    default: 10

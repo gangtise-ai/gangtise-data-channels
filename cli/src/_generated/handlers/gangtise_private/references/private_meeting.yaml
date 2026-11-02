@@ -1,0 +1,52 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-private/references/private_meeting.yaml
+# Regenerate: python3 scripts/generate.py
+name: private_meeting
+title: Private Meeting
+description: 检索用户上传的音频文件，或按conference_ids获取ASR语音识别或AI速记内容
+parameters:
+  keyword:
+    type: string
+    description: 会议标题关键词（search）
+  conference_ids:
+    type: string
+    description: 会议 ID 或标题，逗号分隔（提供后自动 get）
+  content_types:
+    type: array
+    description: asr / summary / both（get 模式，默认 summary）
+    items:
+      type: string
+  start_time:
+    type: string
+    description: "起始时间，格式 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss"
+  end_time:
+    type: string
+    description: "结束时间，格式 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss"
+  security_list:
+    type: array
+    description: 证券代码，须带市场后缀（如 600519.SH），不做名称解析
+    items:
+      type: string
+  institution_list:
+    type: array
+    description: 牵头机构 ID（如 C100000027，可用 gangtise-file get_institutions 查询），不做名称解析
+    items:
+      type: string
+  research_area_list:
+    type: array
+    description: 研究方向 ID，逗号分隔
+    items:
+      type: string
+  category_list:
+    type: array
+    description: 会议类别：earningsCall 等，或中文（业绩会、策略会…）
+    items:
+      type: string
+  limit:
+    type: integer
+    description: search 列表条数上限（默认 100）
+  page_from:
+    type: integer
+    description: 分页，page-size 最大 50
+  page_size:
+    type: integer
+    description: 分页，page-size 最大 50

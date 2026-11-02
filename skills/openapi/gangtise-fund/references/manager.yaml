@@ -1,0 +1,10 @@
+name: manager
+title: Manager
+description: "基金经理档案：按姓名精确匹配，返回学历、从业年限、在管基金数与规模、简介等。"
+parameters:
+  names:
+    type: array
+    description: "基金经理姓名，逗号分隔，如 张坤,葛兰"
+    items:
+      type: string
+    required: true

@@ -1,0 +1,10 @@
+name: etf_header
+title: EtfHeader
+description: "ETF 申赎基本资料（最新交易日）：申赎状态、最小申赎单位、现金差额、预估现金等。"
+parameters:
+  securities:
+    type: array
+    description: "ETF代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true

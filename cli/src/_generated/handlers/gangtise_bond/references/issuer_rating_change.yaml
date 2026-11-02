@@ -1,0 +1,27 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-bond/references/issuer_rating_change.yaml
+# Regenerate: python3 scripts/generate.py
+name: issuer_rating_change
+title: IssuerRatingChange
+description: "发债主体评级变动：主体历次评级调整记录。securities（按债券找发行人）与 issuers（全称或简称；简称多家匹配时全部列出）必须且只能传一个。"
+parameters:
+  securities:
+    type: array
+    description: "债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径。返回这些债券对应发行人的评级变动"
+    items:
+      type: string
+  issuers:
+    type: array
+    description: "发债主体全称或简称，逗号分隔。简称多家匹配时全部列出，不自动取最接近的一家"
+    items:
+      type: string
+  start_date:
+    type: string
+    description: "公告日期起始 yyyy-MM-dd；不传返回全部历史"
+  end_date:
+    type: string
+    description: "公告日期截止 yyyy-MM-dd；不传返回全部历史"
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回全部 12 个字段"
+    items:
+      type: string

@@ -1,0 +1,59 @@
+name: summary
+title: Summary
+description: 检索用户白名单权限范围内的纪要，支持机构、行业、来源类型、参会角色等筛选，可下载纪要文件
+parameters:
+  keyword:
+    type: string
+    description: 搜索关键词
+  securities:
+    type: array
+    description: 证券名称或代码列表
+    items:
+      type: string
+  start_date:
+    type: string
+    description: 起始日期，格式 yyyy-MM-dd
+  end_date:
+    type: string
+    description: 结束日期，格式 yyyy-MM-dd
+  institutions:
+    type: array
+    description: institutions
+    items:
+      type: string
+  industries:
+    type: array
+    description: 行业或研究方向名称列表；可选值见 get_industries
+    items:
+      type: string
+  source_types:
+    type: array
+    description: 来源类型：会议平台、公司公告、网络资源（也可传 1/2/3）；不在其中会直接报错
+    items:
+      type: string
+  market_list:
+    type: array
+    description: 市场类别列表；可选 aShares/hkStocks/usChinaConcept/usStocks（或中文：A股/港股/美股中概/美股）
+    items:
+      type: string
+  participant_role_list:
+    type: array
+    description: participant_role_list
+    items:
+      type: string
+  category_list:
+    type: array
+    description: 分类/类型列表；帕米尔专家纪要可选 companyAnalysis/industryAnalysis（或中文：公司分析/行业分析）
+    items:
+      type: string
+  columns:
+    type: array
+    description: 兼容参数：旧版栏目列表（A股/港股/美股中概/美股/高管/专家/业绩会/策略会/公司分析/行业分析/基金路演），会映射到 market_list/participant_role_list/category_list
+    items:
+      type: string
+  limit:
+    type: integer
+    description: 返回条数上限
+  download:
+    type: boolean
+    description: 是否下载文件全文

@@ -1,0 +1,10 @@
+name: etf_components
+title: EtfComponents
+description: "ETF 申赎成分股（最新交易日）：成分股代码、数量、现金替代标志与金额等。"
+parameters:
+  securities:
+    type: array
+    description: "ETF代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true

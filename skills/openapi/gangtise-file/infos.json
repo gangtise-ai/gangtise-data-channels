@@ -1,0 +1,24 @@
+{
+  "summary": "在 Gangtise 文件中心按报告、公告、纪要等类型检索文档，返回文件 ID 与元数据，并可按类型与 ID 下载完整文件。",
+  "installation_instructions": "通过 https://gts-download.obs.cn-east-3.myhuaweicloud.com/skills/gangtise-file.zip 下载解压，并复制到 skills/ 目录下；需配置 GTS_ACCESS_KEY / GTS_SECRET_KEY。",
+  "keywords": [
+    "文件中心",
+    "公告检索",
+    "研报下载",
+    "会议纪要",
+    "gangtise file",
+    "找报告",
+    "文档 ID"
+  ],
+  "example_prompts": [
+    "比亚迪今年有哪些研究报告？先列个清单，大概二十篇。",
+    "外资研报里和自动驾驶相关的，今年上半年有哪些？",
+    "海外独立分析师关于肿瘤的观点有没有？原文和中文版都帮我下下来。",
+    "五粮液今年公告里提到业绩的有哪些？",
+    "电话会纪要里和锂电相关的，业绩发布会那种，帮我找二十条。",
+    "帕米尔专家纪要里和 AI 智能体相关的，按时间倒序给我二十条。",
+    "首席对半导体有什么强烈推荐的观点？要实时的。",
+    "最近有没有路演或线下策略会，关键词策略会，上半年内的。"
+  ],
+  "when_not_to_use": []
+}

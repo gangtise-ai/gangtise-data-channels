@@ -1,0 +1,21 @@
+name: rating_change
+title: RatingChange
+description: "债项评级变动：债券历次评级调整记录（调整前后评级、展望、评级机构、公告日期）。"
+parameters:
+  securities:
+    type: array
+    description: "债券代码/简称/拼音，逗号分隔；亦可传 .csv 路径。接口单次上限 10 只，超出自动分批"
+    items:
+      type: string
+    required: true
+  start_date:
+    type: string
+    description: "公告日期起始 yyyy-MM-dd；不传返回全部历史"
+  end_date:
+    type: string
+    description: "公告日期截止 yyyy-MM-dd；不传返回全部历史"
+  field_list:
+    type: array
+    description: "字段英文名或中文名，逗号分隔；不传返回全部 11 个字段"
+    items:
+      type: string

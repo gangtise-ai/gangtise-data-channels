@@ -1,0 +1,49 @@
+.vscode
+.idea
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+dist/
+*.egg-info/
+workspace/
+.authorization
+.test-authorization
+.env
+*.zip
+test.*
+secrets.local.sh
+
+# leftover vendor path from the old _core layout
+skills/openapi/**/scripts/_core/
+
+# 非开源 skill 类：仅本机/内部分发，不进公开仓
+skills/research/
+skills/others/
+skills/tools/
+skills/system/
+skills/_spec/
+
+# 本地接口问题复现记录
+problem.md
+
+# 自有服务启动与镜像推送（不进公开仓）
+mcp/upload.sh
+mcp/upload_image.sh
+mcp/local_start.sh
+mcp/local_nginx*
+mcp/local_mcp_proxy.py
+mcp/gangtise-mcp.yaml
+mcp/configmap.yaml
+mcp/.gitlab-ci.yml
+mcp/connectors/
+mcp/token_refresh/**
+!mcp/token_refresh/.dockerkeep
+!mcp/token_refresh/gts_token_refresh.py
+
+# 本地打包/上传脚本
+scripts/package_skills.sh
+scripts/upload_to_obs.py
+deploy/
+.tmp

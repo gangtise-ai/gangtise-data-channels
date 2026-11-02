@@ -1,0 +1,34 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-agent/references/management_sentiment.yaml
+# Regenerate: python3 scripts/generate.py
+name: management_sentiment
+title: Management Sentiment
+description: 公司管理层情绪。用 sentiment_type 切换指标、结论、问答明细：指标给三个维度评分与分问题类型得分，结论给情绪判断、信号和重点 QA 对比，明细按来源会议返回逐条问答评分与依据。输出为组装后的 Markdown。
+parameters:
+  sentiment_type:
+    type: string
+    description: "查询类型：indicator（指标）、conclusion（结论）、detail（明细）。也可用中文：指标 / 结论 / 明细"
+    required: true
+  securities:
+    type: array
+    description: "证券名称或代码，逗号分隔。仅 indicator / conclusion 使用；不传则不按证券过滤"
+    items:
+      type: string
+  start_time:
+    type: string
+    description: "开始时间，yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss。仅 indicator / conclusion；只传日期时按当天 00:00:00"
+  end_time:
+    type: string
+    description: "结束时间，yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss。仅 indicator / conclusion；只传日期时按当天 23:59:59"
+  page_from:
+    type: integer
+    description: "分页起始偏移，默认 0。仅 indicator / conclusion"
+    default: 0
+  page_size:
+    type: integer
+    description: "单页条数，1~100。指标默认 20，结论默认 10。指标与结论按 5 积分/条计费"
+  source_type:
+    type: string
+    description: "明细来源类型，目前仅 conference（电话会议）。仅 detail"
+  source_id:
+    type: string
+    description: "明细来源 ID，取指标或结论结果中的 source.sourceId。仅 detail，必填；按 10 积分/次计费"

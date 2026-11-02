@@ -1,0 +1,43 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-private/references/stockpool.yaml
+# Regenerate: python3 scripts/generate.py
+name: stockpool
+title: Stockpool
+description: |
+  自选股股票池：检索股票池、获取池内证券，以及创建/重命名/删除股票池、添加/移除证券，通过 mode 区分。
+  create/rename/delete/add_stock/delete_stock 会修改用户股票池，调用前须与用户确认。
+parameters:
+  mode:
+    type: string
+    description: "search 列股票池（默认，提供 pool_ids/all_pools 时自动取证券）；get 取池内证券；create 创建池；rename 重命名池；delete 删除池（可多个）；add_stock 向池添加证券；delete_stock 从池移除证券"
+    enum:
+      - search
+      - get
+      - create
+      - rename
+      - delete
+      - add_stock
+      - delete_stock
+    default: search
+  keyword:
+    type: string
+    description: 股票池名称或 ID 子串过滤（search）
+  pool_ids:
+    type: string
+    description: 池 ID 或名称，逗号分隔。仅字母数字与逗号时视为 ID；否则按名称唯一完全匹配解析。get/delete 可多个，rename/add_stock/delete_stock 仅一个
+  all_pools:
+    type: boolean
+    description: get 使用 poolIdList=["all"]（提供后自动 get）
+  limit:
+    type: integer
+    description: search 列出/过滤的股票池数量上限（默认 100）
+  pool_name:
+    type: string
+    description: 股票池名称，最长 10 字符，不可与已有池重名（create 的新池名；rename 的新名称）
+  securities:
+    type: array
+    description: 证券代码，须带市场后缀，如 600519.SH、00700.HK、AAPL.O（add_stock/delete_stock）
+    items:
+      type: string
+  confirm:
+    type: boolean
+    description: delete 必填 true：删除不可恢复。须先向用户列出将被删除的对象并取得明确同意后才能传 true；被拒后不要自行补 true 重试

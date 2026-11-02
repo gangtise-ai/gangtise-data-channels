@@ -1,0 +1,32 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-fund/references/allocation.yaml
+# Regenerate: python3 scripts/generate.py
+name: allocation
+title: Allocation
+description: "基金持仓分布（定期报告）：资产配置（默认）、持股行业分布（申万/中信一级）、持有券种分布、持有基金类型分布（FOF）。query_type 选择分布类型。"
+parameters:
+  securities:
+    type: array
+    description: "基金代码/简称/拼音，逗号分隔；亦可传 .csv 路径"
+    items:
+      type: string
+    required: true
+  query_type:
+    type: string
+    description: "asset(资产配置) / industry(持股行业) / bond(持有券种) / fund(持有基金类型)，逗号分隔；all 全部"
+  start_date:
+    type: string
+    description: "报告期开始 yyyy-MM-dd；不传则不限制"
+  end_date:
+    type: string
+    description: "报告期结束 yyyy-MM-dd；不传则不限制"
+  asset_level:
+    type: array
+    description: "仅资产配置：level1 / level2，逗号分隔；不传返回全部层级"
+    items:
+      type: string
+  industry_standard:
+    type: string
+    description: "仅持股行业：swIndustry(申万一级，接口默认) / citicIndustry(中信一级)"
+  position_type:
+    type: string
+    description: "仅持股行业：top(重仓，接口默认) / all(全部持股，仅半年报与年报)"
