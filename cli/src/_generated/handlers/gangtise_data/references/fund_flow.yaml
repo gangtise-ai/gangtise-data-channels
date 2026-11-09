@@ -2,11 +2,18 @@
 # Regenerate: python3 scripts/generate.py
 name: fund_flow
 title: Fund Flow
-description: 查询 A 股日资金流向（小/中/大/特大单及主力净流入），支持指定证券或全市场，输出 CSV。仅历史数据，不含实时。
+description: |
+  查询 A 股个股或板块日资金流向（小/中/大/特大单及主力净流入），支持指定证券、指定板块或全市场，输出 CSV。仅历史数据，不含实时。
+  个股与全市场走 fund-flow/daily；板块走 fund-flow/sector-daily（sectors 传板块 ID 或名称，与 securities/all_market 互斥）。
 parameters:
   securities:
     type: array
-    description: 逗号分隔的证券名称/代码/拼音；亦可传 .csv 路径（须存在且后缀为 .csv，读 security_code / code / 代码 / security_abbr 列）。与 all_market 二选一
+    description: 逗号分隔的证券名称/代码/拼音；亦可传 .csv 路径（须存在且后缀为 .csv，读 security_code / code / 代码 / security_abbr 列）。与 sectors、all_market 互斥
+    items:
+      type: string
+  sectors:
+    type: array
+    description: 板块 ID 或名称，逗号分隔（如 1000001065 或 半导体）；名称须唯一高分匹配，否则返回候选。与 securities、all_market 互斥
     items:
       type: string
   start_date:
@@ -23,6 +30,6 @@ parameters:
     description: 传入 securityList=["aShares"] 查询全市场 A 股。未指定 start_date/end_date 时默认查当天，无数据则逐日向前回退（最多 15 天）
   field_list:
     type: array
-    description: 指定字段英文名或中文名，逗号分隔；不传则默认返回全部净流入字段
+    description: 指定字段英文名或中文名，逗号分隔；不传则默认返回全部净流入字段。板块模式可用个股字段名，脚本会自动加 sector 前缀
     items:
       type: string

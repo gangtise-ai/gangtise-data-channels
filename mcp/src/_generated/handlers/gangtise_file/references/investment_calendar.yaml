@@ -13,10 +13,16 @@ parameters:
     description: 搜索关键词
   start_date:
     type: string
-    description: 起始日期，格式 yyyy-MM-dd
+    description: 举办起始日期，格式 yyyy-MM-dd。路演/调研/线下策略会/论坛转为 startTime；财报日历为发布日期 startDate
   end_date:
     type: string
-    description: 结束日期，格式 yyyy-MM-dd
+    description: 举办结束日期，格式 yyyy-MM-dd。路演等结束日含全天，转为 endTime；财报日历为 endDate
+  publish_start_date:
+    type: string
+    description: 收录起始时间，yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss。仅路演/调研/线下策略会/论坛，转为 publishStartTime。按日程信息首次被收录的时间过滤，与 start_date/end_date（举办时间）为与关系。不传则不按收录时间过滤
+  publish_end_date:
+    type: string
+    description: 收录结束时间，格式同 publish_start_date；只传日期时含当天全天，转为 publishEndTime。仅路演/调研/线下策略会/论坛
   limit:
     type: integer
     description: 返回条数上限

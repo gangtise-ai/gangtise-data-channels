@@ -12,6 +12,7 @@ import os
 import sys
 import json
 import datetime
+import uuid
 from typing import Dict, List, Any, NoReturn, Optional
 import requests
 from .gts_auth import (
@@ -144,6 +145,27 @@ def add_usages(usages_list: List[Dict[str, Any]]):
                 usages[k] = usages[k] + v
     return usages
 
+def _unique_result_path(process_dir: str, module_name: str, extension: str) -> str:
+    """日期、微秒和随机后缀独占创建，避免只靠时分秒重名。"""
+    os.makedirs(process_dir, exist_ok=True)
+    ext = (extension or "dat").lstrip(".") or "dat"
+    stem = module_name or "result"
+    for _ in range(8):
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        suffix = uuid.uuid4().hex[:8]
+        path = os.path.join(process_dir, f"{stem}_{stamp}_{suffix}.{ext}")
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            continue
+        except OSError:
+            continue
+        else:
+            os.close(fd)
+            return path
+    raise RuntimeError("结果文件无法写入，请稍后重试")
+
+
 def save_data_csv(
     records: List[Dict[str, Any]],
     method_name: str = "screener",
@@ -152,7 +174,6 @@ def save_data_csv(
 ) -> str:
     """将结果落盘为 CSV（对齐 gangtise-data format_response 的 data 路径），返回绝对路径。"""
     import csv
-    import time
 
     if not records:
         raise ValueError("records 不能为空")
@@ -161,18 +182,7 @@ def save_data_csv(
         process_dir = output_dir
     else:
         process_dir = os.path.join(gangtise_workspace_path, method_name)
-    os.makedirs(process_dir, exist_ok=True)
-
-    now = datetime.datetime.now().strftime("%H%M%S")
-    process_path = os.path.join(process_dir, f"{module_name}_{now}.csv")
-    max_retries = 10
-    while os.path.exists(process_path) and max_retries > 0:
-        time.sleep(1)
-        now = datetime.datetime.now().strftime("%H%M%S")
-        process_path = os.path.join(process_dir, f"{module_name}_{now}.csv")
-        max_retries -= 1
-    if max_retries == 0:
-        raise RuntimeError("文件存储系统繁忙，请稍后再试")
+    process_path = _unique_result_path(process_dir, module_name, "csv")
 
     # 稳定列序：先按首行键，后续行多出的键追加在末尾
     fieldnames: List[str] = list(records[0].keys())

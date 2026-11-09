@@ -19,6 +19,7 @@
 | `--category-list` | 否 | 会议类别，逗号分隔。可选值：`earningsCall`、`strategyMeeting`、`fundRoadshow`、`shareholdersMeeting`、`maMeeting`、`specialMeeting`、`companyAnalysis`、`industryAnalysis`、`other`（也支持中文：`业绩会`、`策略会`、`基金路演`、`股东大会`、`并购会议`、`特别会议`、`公司分析`、`行业分析`、`其他`）。 |
 | `--market-list` | 否 | 纪要所属市场类别，逗号分隔。可选值：`aShares`、`hkStocks`、`usChinaConcept`、`usStocks`（也支持中文：`A股`、`港股`、`美股中概`、`美股`）。 |
 | `--participant-role-list` | 否 | 特殊参会人标识，逗号分隔。可选值：`management`、`expert`（也支持中文：`高管`、`专家`）。 |
+| `--search-type` | 否 | 搜索类型：`1` 标题搜索（默认），`2` 全文搜索。标题无结果时会自动尝试全文。 |
 | `-d` / `--download` | 否 | 是否下载文件。 |
 | `-od` / `--output-dir` | 否 | 结果与下载文件保存目录路径。 |
 | `-dt` / `--download-types` | 否 | 下载文件类型，逗号分隔。可选：pdf, markdown。 |
@@ -40,6 +41,11 @@ python3 scripts/get_institutions.py
 **按关键词 + 会议类别：**
 ```bash
 python3 scripts/summary.py -k 锂电 --category-list earningsCall -l 20
+```
+
+**全文检索：**
+```bash
+python3 scripts/summary.py -k 锂电 --search-type 2 --category-list earningsCall -l 20
 ```
 
 **按证券 + 行业：**

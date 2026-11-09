@@ -87,6 +87,203 @@ def test_stockpool_delete_requires_confirm():
         stockpool.stockpool_finder(mode="delete", pool_ids="1")
 
 
+def test_stockpool_search_defaults_to_personal_space(tmp_path):
+    pkg, stockpool = _load("gangtise-private", "stockpool")
+    pools = [{"poolId": "808477293", "poolName": "自选股1", "spaceType": 1}]
+    with patch(f"{pkg}.stockpool._require_auth"), patch(f"{pkg}.stockpool._post", return_value=pools) as post:
+        text = stockpool.stockpool_finder(mode="search", limit=10, output_dir=str(tmp_path))
+    assert post.call_args.args[0] == stockpool.GET_POOL_LIST_URL
+    assert post.call_args.args[1] == {"spaceType": 1}
+    assert "个人自选股" in str(text)
+    assert "808477293" in str(text)
+
+
+def test_stockpool_get_uses_same_space_as_pool_ids(tmp_path):
+    pkg, stockpool = _load("gangtise-private", "stockpool")
+    stocks = [{"securityCode": "600519.SH", "securityName": "贵州茅台"}]
+    with patch(f"{pkg}.stockpool._require_auth"), patch(f"{pkg}.stockpool._post", return_value=stocks) as post:
+        text = stockpool.stockpool_finder(
+            mode="get", pool_ids="908477301,908477302", space_type="租户", output_dir=str(tmp_path)
+        )
+    assert post.call_args.args[0] == stockpool.GET_STOCK_LIST_URL
+    assert post.call_args.args[1] == {"spaceType": 2, "poolIdList": ["908477301", "908477302"]}
+    assert "所属租户" in str(text)
+
+
+def test_stockpool_all_tenant_pools():
+    pkg, stockpool = _load("gangtise-private", "stockpool")
+    with patch(f"{pkg}.stockpool._require_auth"), patch(f"{pkg}.stockpool._post", return_value=[]) as post:
+        text = stockpool.stockpool_finder(all_pools=True, space_type=2)
+    assert post.call_args.args[1] == {"spaceType": 2, "poolIdList": ["all"]}
+    assert "所属租户" in str(text)
+
+
+def test_stockpool_name_resolve_stays_in_requested_space(tmp_path):
+    pkg, stockpool = _load("gangtise-private", "stockpool")
+
+    def fake_post(url, payload):
+        if url == stockpool.GET_POOL_LIST_URL:
+            assert payload == {"spaceType": 2}
+            return [{"poolId": "908477301", "poolName": "交易池", "spaceType": 2}]
+        assert url == stockpool.GET_STOCK_LIST_URL
+        assert payload == {"spaceType": 2, "poolIdList": ["908477301"]}
+        return [{"securityCode": "600519.SH", "securityName": "贵州茅台"}]
+
+    with patch(f"{pkg}.stockpool._require_auth"), patch(f"{pkg}.stockpool._post", side_effect=fake_post):
+        text = stockpool.stockpool_finder(pool_ids="交易池", space_type="2", output_dir=str(tmp_path))
+    assert "600519.SH" in str(text)
+
+
+def test_stockpool_manage_rejects_tenant_space():
+    _, stockpool = _load("gangtise-private", "stockpool")
+    _, runtime = _load("gangtise-private", "gts_runtime")
+    with pytest.raises(runtime.ValidationError, match="个人自选股"):
+        stockpool.stockpool_finder(mode="create", pool_name="核心持仓", space_type=2)
+
+
+@pytest.mark.parametrize("raw", [3, "3", "ALL", True])
+def test_stockpool_rejects_invalid_space_type(raw):
+    _, stockpool = _load("gangtise-private", "stockpool")
+    _, runtime = _load("gangtise-private", "gts_runtime")
+    with pytest.raises(runtime.ValidationError, match="space_type"):
+        stockpool.stockpool_finder(mode="search", space_type=raw)
+
+
+def test_stockpool_file_space_type_must_be_single_region(tmp_path):
+    _, stockpool = _load("gangtise-private", "stockpool")
+    _, runtime = _load("gangtise-private", "gts_runtime")
+    path = tmp_path / "pools.csv"
+    path.write_text("pool_id,pool_name,space_type\n908477301,交易池,2\n", encoding="utf-8")
+    ids, space = stockpool._load_pools_from_file(str(path))
+    assert ids == ["908477301"]
+    assert space == 2
+    mixed = tmp_path / "mixed.csv"
+    mixed.write_text("pool_id,space_type\n1,1\n2,2\n", encoding="utf-8")
+    with pytest.raises(runtime.ValidationError, match="space_type"):
+        stockpool._load_pools_from_file(str(mixed))
+
+
+def test_stockpool_delete_note_requires_confirm():
+    _, stockpool = _load("gangtise-private", "stockpool")
+    _, runtime = _load("gangtise-private", "gts_runtime")
+    with pytest.raises(runtime.ValidationError, match="个股笔记"):
+        stockpool.stockpool_finder(mode="delete_note", note_ids="1835")
+
+
+def test_stockpool_search_note_all(tmp_path):
+    pkg, stockpool = _load("gangtise-private", "stockpool")
+    payload = {
+        "total": 1,
+        "list": [
+            {
+                "stockNoteId": "1740",
+                "securityList": ["600111.SH", "688106.SH"],
+                "content": "上游材料涨价",
+                "createTime": "2026-10-23 10:20:03",
+                "updateTime": "2026-10-23 11:05:00",
+            }
+        ],
+    }
+    with patch(f"{pkg}.stockpool._require_auth"), patch(f"{pkg}.stockpool._post", return_value=payload) as post:
+        text = stockpool.stockpool_finder(mode="search_note", all_notes=True, output_dir=str(tmp_path))
+    assert post.call_args.args[0] == stockpool.GET_NOTE_LIST_URL
+    assert post.call_args.args[1] == {"from": 0, "size": 20, "securityList": ["all"]}
+    assert "1740" in str(text)
+    assert "上游材料涨价" in str(text)
+
+
+def test_stockpool_search_note_by_ids_and_securities_mutex():
+    _, stockpool = _load("gangtise-private", "stockpool")
+    _, runtime = _load("gangtise-private", "gts_runtime")
+    with pytest.raises(runtime.ValidationError, match="不能同时"):
+        stockpool.stockpool_finder(mode="search_note", note_ids="1737", securities=["688106.SH"])
+
+
+def test_stockpool_add_note_posts_payload():
+    pkg, stockpool = _load("gangtise-private", "stockpool")
+    with patch(f"{pkg}.stockpool._require_auth"), patch(
+        f"{pkg}.stockpool._post", return_value={"stockNoteId": "1835", "securityList": ["688106.SH"]}
+    ) as post:
+        text = stockpool.stockpool_finder(
+            mode="add_note", securities=["688106.SH"], note_content="电子特气国产替代"
+        )
+    assert post.call_args.args[0] == stockpool.ADD_NOTE_URL
+    assert post.call_args.args[1] == {"securityList": ["688106.SH"], "content": "电子特气国产替代"}
+    assert "1835" in str(text)
+
+
+def test_stockpool_update_note_single_id():
+    pkg, stockpool = _load("gangtise-private", "stockpool")
+    _, runtime = _load("gangtise-private", "gts_runtime")
+    with pytest.raises(runtime.ValidationError, match="一个笔记"):
+        stockpool.stockpool_finder(mode="update_note", note_ids="1,2", note_content="x")
+    with patch(f"{pkg}.stockpool._require_auth"), patch(f"{pkg}.stockpool._post", return_value={}) as post:
+        text = stockpool.stockpool_finder(mode="update_note", note_ids="1835", note_content="终稿")
+    assert post.call_args.args[0] == stockpool.UPDATE_NOTE_URL
+    assert post.call_args.args[1] == {"stockNoteId": "1835", "content": "终稿"}
+    assert "1835" in str(text)
+
+
+def test_stockpool_delete_note_item_failures():
+    pkg, stockpool = _load("gangtise-private", "stockpool")
+    data = {
+        "successList": ["1835"],
+        "failList": [{"stockNoteId": "1836", "failReason": "笔记删除失败，请重试"}],
+    }
+    with patch(f"{pkg}.stockpool._require_auth"), patch(f"{pkg}.stockpool._post", return_value=data) as post:
+        text = stockpool.stockpool_finder(mode="delete_note", note_ids="1835,1836", confirm=True)
+    assert post.call_args.args[0] == stockpool.DELETE_NOTE_URL
+    assert post.call_args.args[1] == {"stockNoteIdList": ["1835", "1836"]}
+    assert "1835" in str(text) and "1836" in str(text)
+
+
+def test_fund_flow_sector_resolves_id_and_fields(tmp_path):
+    pkg, fund_flow = _load("gangtise-data", "fund_flow")
+    api = {
+        "total": 1,
+        "fieldList": ["sectorId", "tradeDate", "sectorMainNetInflow"],
+        "list": [["1000001065", "2024-05-20", 268000000.0]],
+    }
+    with patch(f"{pkg}.fund_flow.get_authorization_token", return_value="tok"), patch(
+        f"{pkg}.fund_flow.get_authorization_headers", return_value={"Authorization": "tok"}
+    ), patch(f"{pkg}.gts_runtime.request_json", return_value=api) as req:
+        text = fund_flow.fund_flow_data(
+            sectors=["1000001065"],
+            start_date="2024-05-20",
+            end_date="2024-05-20",
+            field_list=["mainNetInflow"],
+            output_dir=str(tmp_path),
+        )
+    assert req.call_args.args[0] == "POST"
+    assert req.call_args.args[1] == fund_flow.FUND_FLOW_SECTOR_DAILY_URL
+    body = req.call_args.kwargs["json"]
+    assert body["sectorList"] == ["1000001065"]
+    assert body["fieldList"] == ["sectorMainNetInflow"]
+    assert "1000001065" in str(text)
+
+
+def test_fund_flow_rejects_sectors_with_securities():
+    _, fund_flow = _load("gangtise-data", "fund_flow")
+    _, runtime = _load("gangtise-data", "gts_runtime")
+    with pytest.raises(runtime.ValidationError, match="不能同时"):
+        fund_flow.fund_flow_data(securities=["贵州茅台"], sectors=["1000001065"])
+
+
+def test_fund_flow_ambiguous_sector_name_is_soft_message(tmp_path):
+    pkg, fund_flow = _load("gangtise-data", "fund_flow")
+    cands = [
+        {"sectorId": "1000000366", "sectorName": "半导体", "hierarchy": "中信", "matchScore": 1.0},
+        {"sectorId": "1000000537", "sectorName": "半导体", "hierarchy": "申万", "matchScore": 1.0},
+    ]
+    with patch(f"{pkg}.fund_flow.get_authorization_token", return_value="tok"), patch(
+        f"{pkg}.fund_flow.get_authorization_headers", return_value={"Authorization": "tok"}
+    ), patch(f"{pkg}.fund_flow._search_sectors", return_value=(cands, None)):
+        text = fund_flow.fund_flow_data(sectors=["半导体"], output_dir=str(tmp_path))
+    assert "匹配到多个板块" in str(text)
+    assert "1000000366" in str(text)
+    assert "API error" not in str(text)
+
+
 @pytest.mark.parametrize(
     "module, finder, id_kw, get_fn",
     [
@@ -137,11 +334,11 @@ def test_opinion_details_batch_and_report_missing():
 def test_company_indicator_calendar_type_and_params():
     _, ci = _load("gangtise-data", "company_indicator")
     _, runtime = _load("gangtise-data", "gts_runtime")
-    trade = {"parameterList": [{"paramKey": "tradeDate"}]}
-    period = {"parameterList": [{"paramKey": "tradeDate"}, {"paramKey": "reportDate"}]}
-    assert ci._auto_calendar_type({"a": trade}, ["a"]) == "TD"
-    assert ci._auto_calendar_type({"a": trade, "b": period}, ["a", "b"]) is None
-    assert ci._auto_calendar_type({"a": trade, "b": None}, ["a", "b"]) is None
+    assert ci._normalize_root_param_value("calendarType", "交易日") == "TD"
+    assert ci._normalize_root_param_value("calendarType", "报告期") == "RD"
+    assert ci._normalize_root_param_value("calendarType", "wd") == "WD"
+    assert ci._calendar_axis_label(None) == "按指标自动"
+    assert ci._calendar_axis_label("RD") == "报告期"
     assert ci._parse_date_param("20260107", "x") == "2026-01-07"
     with pytest.raises(runtime.ValidationError):
         ci._parse_date_param("01-07-2026", "x")
@@ -194,6 +391,53 @@ def test_quote_late_start_note_per_security():
 def test_file_title_strips_path_separator():
     _, get_file = _load("gangtise-file", "get_file")
     assert "/" not in get_file.safe_file_title({"title": "Week Ending 9/26/2026", "url": ""})
+
+
+def test_calendar_publish_window_is_and_with_event_time():
+    _, cal = _load("gangtise-file", "investment_calendar")
+    start, end = cal._format_time_range("2026-03-01", "2026-03-02")
+    payload = cal._build_payload(
+        "forum",
+        start,
+        end,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        publish_start=start,
+        publish_end=end,
+    )
+    assert payload["startTime"] == start
+    assert payload["endTime"] == end
+    assert payload["publishStartTime"] == start
+    assert payload["publishEndTime"] == end
+    for kind in ("roadshow", "site_visit", "strategy_meeting"):
+        one_side = cal._build_payload(
+            kind, None, None, None, None, None, None, None, None, None, None, None, publish_start=start
+        )
+        assert one_side["publishStartTime"] == start
+        assert "publishEndTime" not in one_side
+        assert "startTime" not in one_side
+    performance = cal._build_payload(
+        "performance", None, None, None, None, None, None, None, None, None, None, None,
+        start_date="2026-03-01", publish_start=start,
+    )
+    assert "publishStartTime" not in performance
+    assert performance["startDate"] == "2026-03-01"
+    row = cal._format_row(
+        "forum",
+        {"forumId": "1", "title": "春季论坛", "startTime": start, "endTime": end, "publishTime": start},
+    )
+    assert row["收录时间"] == "2026-03-01 00:00:00"
+    assert row["文件时间"]
+    _, runtime = _load("gangtise-file", "gts_runtime")
+    with pytest.raises(runtime.ValidationError, match="财报日历"):
+        cal.calendar_finder(kind="performance", publish_start_date="2026-03-01")
 
 
 def test_calendar_maps_cn_values_and_industries():

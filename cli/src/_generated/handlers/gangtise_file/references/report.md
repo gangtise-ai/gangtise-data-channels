@@ -20,6 +20,8 @@
 | `--source-types` | 否 | 来源类型，逗号分隔；可选值：`研报`、`公众号`。 |
 | `--category-list` | 否 | 研报类别，逗号分隔。英文 code 或中文均可，如 `industry,company` 或 `行业研究,公司研究`（完整列表见 `report.py --help`）。 |
 | `--llm-tag-list` | 否 | 语义标签，逗号分隔。英文：`inDepth`/`earningsReview`/`industryStrategy`；或中文：`深度报告`/`业绩点评`/`行业策略`。 |
+| `--search-type` | 否 | 搜索类型：`1` 标题搜索（默认），`2` 全文搜索。标题无结果时会自动尝试全文。 |
+| `--rank-type` | 否 | 排序方式：`1` 综合排序（默认），`2` 时间倒序。 |
 | `-d` / `--download` | 否 | 是否在检索后自动下载所有对应研究报告文件，默认不下载。 |
 | `-od` / `--output-dir` | 否 | 结果与下载文件保存目录路径，建议使用绝对路径。默认保存在 gangtise 工作目录下的 `report` 目录。 |
 | `-dt` / `--download-types` | 否 | 下载文件类型，逗号分隔。可选：pdf, markdown。 |
@@ -41,6 +43,11 @@ python3 scripts/get_institutions.py
 **按关键词 + 时间 + 数量：**
 ```bash
 python3 scripts/report.py -k 比亚迪 -sd 2026-01-01 -ed 2026-12-31 -l 20
+```
+
+**全文检索（在正文中匹配关键词）：**
+```bash
+python3 scripts/report.py -k 固态电池 --search-type 2 -sd 2026-01-01 -ed 2026-12-31 -l 20
 ```
 
 **按关键词 + 来源 + 行业：**

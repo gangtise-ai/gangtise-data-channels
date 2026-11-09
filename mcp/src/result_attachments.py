@@ -3,12 +3,13 @@
 - 单文件：原样传输（不压缩），按扩展名推断 mimeType
 - 目录：打成 zip 后传输
 - 文本中的 `` `/abs/path` `` 就地替换为 ``附件: `附件名` ``；
-  准备失败则替换为失败说明；超过 ``_MAX_ATTACH_BYTES`` 时若配置了 OBS
+  准备失败则换成「暂不可用」，不把异常原文写进正文；超过 ``_MAX_ATTACH_BYTES`` 时若配置了 OBS
   则上传并在正文给出下载链接，否则说明过大已跳过
+- 只附着工作区内的路径。正文里的 ``/.``、``/..`` 不会被收成 ``/`` 再打包，也不会去读 ``/sys``、``/proc``
 - ``MCP_ATTACH_OBS_ALWAYS=true``（且已配 OBS）时：任意大小均上传 OBS，
   正文只返回链接（不嵌入 EmbeddedResource），便于 WorkBuddy 等不解析附件的客户端
 - OBS 对象默认 1 天过期自动删除（``OBS_EXPIRE_DAYS``，见 ``obs_upload``）
-- 嵌入附件、OBS 上传，或准备失败 / 过大跳过：默认清理 ``WORK_PATH`` 下对应本地文件并打日志
+- 嵌入附件、OBS 上传，或准备失败 / 过大跳过：默认清理工作区内对应本地文件并打日志
   （``MCP_CLEANUP_LOCAL_AFTER_ATTACH``，默认 true；未开附件时不会走此逻辑）
 - ``with_path_attachments``（enabled）默认同步附着；仅下载类工具或检出重型
   文件（pdf/zip 等、目录、超阈值）时异步提交 job，返回 ``job_id``，由
@@ -89,17 +90,91 @@ def attach_obs_always_enabled() -> bool:
     return _env_flag("MCP_ATTACH_OBS_ALWAYS", "false")
 
 
-def _under_work_path(path: str) -> bool:
-    """仅清理 WORK_PATH 下文件，避免误删正文里其它绝对路径。"""
-    work = (os.getenv("WORK_PATH") or "").strip()
-    if not work:
-        return True
+# 容器里常见、且业务结果不会写到这里的系统树。读到 ext4 的 trigger_fs_error 就是从这些目录走进去的。
+_SYSTEM_PREFIXES = (
+    "/sys",
+    "/proc",
+    "/dev",
+    "/boot",
+    "/root",
+    "/etc",
+    "/run",
+    "/usr",
+    "/bin",
+    "/sbin",
+    "/lib",
+    "/lib64",
+)
+
+
+def _find_local_workspace() -> str:
+    """与各 handler 的本地工作区发现规则对齐：向上找 .openclaw / .agent / workspace / skills。"""
+    def _walk(names: Tuple[str, ...]) -> Optional[str]:
+        path = os.path.abspath(os.getcwd())
+        while path != os.path.dirname(path):
+            if os.path.basename(path) in names:
+                return path
+            path = os.path.dirname(path)
+        return None
+
+    found = _walk((".openclaw",)) or _walk((".agent",)) or _walk(("workspace",)) or _walk(("skills",))
+    if found is None:
+        found = os.path.abspath(os.getcwd())
+    if os.path.basename(found) == "skills":
+        found = os.path.dirname(found)
+    if found.endswith("workspace"):
+        return os.path.join(found, "gangtise")
+    return os.path.join(found, "workspace", "gangtise")
+
+
+def _workspace_root() -> str:
+    for key in ("WORK_PATH", "GTS_WORK_PATH"):
+        raw = (os.getenv(key) or "").strip()
+        if raw:
+            return os.path.abspath(raw)
+    deploy = (os.getenv("DEPLOY_ENV") or "local").strip()
+    if deploy == "local":
+        return _find_local_workspace()
+    return "/opt/data/workspace/default"
+
+
+def _realpath(path: str) -> Optional[str]:
     try:
-        norm = os.path.abspath(path)
-        root = os.path.abspath(work)
-        return norm == root or norm.startswith(root + os.sep)
-    except Exception:
+        return os.path.realpath(path)
+    except (OSError, ValueError):
+        return None
+
+
+def _is_system_path(path: str) -> bool:
+    if not path or path == "/":
+        return True
+    return any(path == prefix or path.startswith(prefix + os.sep) for prefix in _SYSTEM_PREFIXES)
+
+
+def _path_allowed(path: str) -> bool:
+    """只允许工作区内部路径。拒绝 ``/``、系统目录，以及指向它们的符号链接。"""
+    try:
+        raw_abs = os.path.abspath(path)
+    except (OSError, ValueError):
         return False
+    real = _realpath(path)
+    root = _realpath(_workspace_root())
+    if not real or not root or real == "/" or root == "/" or raw_abs == "/":
+        return False
+    if _is_system_path(raw_abs) or _is_system_path(real):
+        return False
+    return real == root or real.startswith(root + os.sep)
+
+
+def _under_work_path(path: str) -> bool:
+    """仅清理工作区内部文件，且不删除工作区根目录本身。"""
+    if not _path_allowed(path):
+        return False
+    real = _realpath(path)
+    root = _realpath(_workspace_root())
+    if not real or not root or real == root:
+        return False
+    return True
 
 
 def _cleanup_local(path: str, *, reason: str = "") -> None:
@@ -127,12 +202,15 @@ def extract_local_paths(text: str) -> List[Tuple[str, str]]:
 
     def _add(raw: str) -> None:
         p = raw.strip().rstrip(".,;:)")
-        # 仅处理服务端 Unix 路径；跳过客户端 Windows 路径（含 \），避免正则 \U 转义错误
-        if not p.startswith("/") or p.startswith("//") or "\\" in p:
+        # 仅处理服务端 Unix 路径；跳过客户端 Windows 路径（含 \），避免正则 \U 转义错误。
+        # rstrip 会把 `/.`、`/..` 削成 `/`，这种片段直接丢弃，避免去打包根目录。
+        if not p.startswith("/") or p.startswith("//") or "\\" in p or p == "/" or set(p) <= {"/", "."}:
             return
         try:
             norm = os.path.abspath(p)
         except Exception:
+            return
+        if norm == "/" or not _path_allowed(norm):
             return
         if norm in seen:
             return
@@ -198,18 +276,47 @@ def _read_file_attachment(path: str) -> Tuple[str, str, bytes]:
 
 
 def _zip_directory(path: str) -> Tuple[str, bytes]:
-    """目录打 zip，返回 (zip 文件名, 字节)。"""
+    """目录打 zip，返回 (zip 文件名, 字节)。
+
+    不跟随符号链接，跳过工作区外和不可读文件，避免一个系统节点让整包失败。
+    """
     base = os.path.basename(path.rstrip("/")) or "attachment"
     zip_name = f"{base}.zip"
+    root_real = os.path.realpath(path)
     buf = io.BytesIO()
+    added = 0
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for root, _dirs, files in os.walk(path):
+        for walk_root, dirnames, files in os.walk(path, followlinks=False):
+            kept_dirs = []
+            for dirname in dirnames:
+                full_dir = os.path.join(walk_root, dirname)
+                if os.path.islink(full_dir):
+                    continue
+                real_dir = _realpath(full_dir)
+                if real_dir and (real_dir == root_real or real_dir.startswith(root_real + os.sep)):
+                    if not _is_system_path(real_dir):
+                        kept_dirs.append(dirname)
+            dirnames[:] = kept_dirs
             for fn in files:
-                full = os.path.join(root, fn)
+                full = os.path.join(walk_root, fn)
+                if os.path.islink(full):
+                    continue
+                real_file = _realpath(full)
+                if not real_file or _is_system_path(real_file):
+                    continue
+                if not (real_file == root_real or real_file.startswith(root_real + os.sep)):
+                    continue
                 if not os.path.isfile(full):
                     continue
                 arc = os.path.join(base, os.path.relpath(full, path))
-                zf.write(full, arcname=arc.replace("\\", "/"))
+                try:
+                    zf.write(full, arcname=arc.replace("\\", "/"))
+                except OSError as exc:
+                    logger.warning("skip unreadable attach file path=%s err=%s", full, exc)
+                    continue
+                added += 1
+    if added == 0:
+        raise OSError(f"目录中没有可读取的文件: {path}")
     return zip_name, buf.getvalue()
 
 
@@ -305,7 +412,7 @@ def build_path_attachments(
         except Exception as e:
             hint = _display_name(norm, is_dir=os.path.isdir(norm))
             logger.warning("attach prepare failed path=%s err=%s", norm, e)
-            replacements.append((raw, norm, _label_fail(hint, f"准备失败：{e}")))
+            replacements.append((raw, norm, _label_fail(hint, "暂不可用")))
             cleanup_paths.append((norm, f"prepare_failed:{e}"))
             continue
 
@@ -325,10 +432,7 @@ def build_path_attachments(
                     (
                         raw,
                         norm,
-                        _label_fail(
-                            name,
-                            f"OBS 上传失败（{len(data)} bytes）：{err or 'unknown'}",
-                        ),
+                        _label_fail(name, "暂不可用"),
                     )
                 )
                 cleanup_paths.append((norm, f"obs_failed:{err}"))
@@ -339,10 +443,7 @@ def build_path_attachments(
                     (
                         raw,
                         norm,
-                        _label_fail(
-                            name,
-                            f"过大且 OBS 上传失败（{len(data)} bytes）：{err}",
-                        ),
+                        _label_fail(name, f"过大，暂不可用（{len(data)} bytes，上限 {max_bytes}）"),
                     )
                 )
                 cleanup_paths.append((norm, f"obs_failed:{err}"))
@@ -389,6 +490,8 @@ def _existing_attach_paths(text: str) -> List[Tuple[str, str]]:
     """正文中存在于磁盘的本地路径（文件或目录）。"""
     out: List[Tuple[str, str]] = []
     for raw, norm in extract_local_paths(text):
+        if not _path_allowed(norm):
+            continue
         try:
             if os.path.isfile(norm) or os.path.isdir(norm):
                 out.append((raw, norm))

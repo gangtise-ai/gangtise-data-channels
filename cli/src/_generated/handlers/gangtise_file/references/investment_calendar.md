@@ -22,9 +22,13 @@
 |------|------|
 | `-t` / `--type` | **必填**，`roadshow` / `site_visit` / `strategy_meeting` / `forum` / `performance` |
 | `-k` / `--keyword` | 搜索关键词，可为空（**财报日历不支持**） |
-| `-sd` / `--start-date` | 开始日期 `YYYY-MM-DD`（路演等转为 13 位时间戳 `startTime`；财报日历为 `startDate`） |
-| `-ed` / `--end-date` | 结束日期 `YYYY-MM-DD`（路演等结束日含全天；财报日历为 `endDate`） |
+| `-sd` / `--start-date` | 举办开始日期 `YYYY-MM-DD`（路演等转为 13 位时间戳 `startTime`；财报日历为 `startDate`） |
+| `-ed` / `--end-date` | 举办结束日期 `YYYY-MM-DD`（路演等结束日含全天；财报日历为 `endDate`） |
+| `--publish-start-date` | 收录开始时间 `YYYY-MM-DD` 或 `YYYY-MM-DD HH:mm:ss`（路演/调研/线下策略会/论坛转为 `publishStartTime`）。不传则不按收录时间过滤 |
+| `--publish-end-date` | 收录结束时间，格式同上；只传日期时含当天全天（转为 `publishEndTime`） |
 | `-l` / `--limit` | 返回条数上限；不传时默认见 `FILE_DEFAULT_LIMIT["calendar"]`，开启 `-d` 下载时默认 `10` |
+
+`--start-date` / `--end-date` 过滤的是**日程举办时间**。`--publish-start-date` / `--publish-end-date` 过滤的是**日程信息首次被收录或发布的时间**。两对区间可以同时使用，关系为「与」。财报日历不支持收录时间参数。
 
 ## 按类型的可选参数
 
@@ -100,7 +104,7 @@
 
 每条记录包含 `类型`（路演 / 调研 / 线下策略会 / 论坛 / 财报日历）、`类型ID` 及标题、时间等字段。
 
-- **路演 / 调研 / 线下策略会 / 论坛**：日程类结果一般不通过 `get_file.py` 下载文件；如需报名链接等，见返回中的 `报名链接`（线下策略会）等字段。
+- **路演 / 调研 / 线下策略会 / 论坛**：`文件时间` 是举办时间（`startTime`～`endTime`）。`收录时间` 对应接口 `publishTime`，为该日程信息首次被收录的时间（东八区），与举办时间不同，可用于增量同步和去重。日程类结果一般不通过 `get_file.py` 下载文件；如需报名链接等，见返回中的 `报名链接`（线下策略会）等字段。
 - **财报日历**：`类型` 为「财报日历」，`类型ID` 为 `performanceReportId`。仅「已发布」条目可下载原文件。
 
 ## 调用示例
@@ -117,6 +121,9 @@ python3 scripts/investment_calendar.py -t strategy_meeting --institutions 开源
 
 # 论坛：研究方向（宏观 → ID 由 RESEARCH_AREA_MAP 解析）
 python3 scripts/investment_calendar.py -t forum --research-areas 宏观 -k 论坛 -l 15
+
+# 论坛：3 月新收录、且举办时间也在 3 月（两对时间为「与」）
+python3 scripts/investment_calendar.py -t forum --publish-start-date 2026-03-01 --publish-end-date 2026-03-31 -sd 2026-03-01 -ed 2026-03-31 -l 20
 
 # 路演：按证券名称筛选
 python3 scripts/investment_calendar.py -t roadshow --securities 宁德时代 -sd 2026-01-01 -ed 2026-05-31 -l 15

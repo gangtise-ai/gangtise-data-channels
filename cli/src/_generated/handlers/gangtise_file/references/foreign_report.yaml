@@ -61,10 +61,10 @@ parameters:
     description: max_report_pages
   search_type:
     type: integer
-    description: 搜索类型：1 标题搜索，2 全文搜索
+    description: 搜索类型：1 标题搜索（默认），2 全文搜索；标题无结果时会自动尝试全文
   rank_type:
     type: integer
-    description: 排序方式：1 综合排序，2 时间倒序
+    description: 排序方式：1 综合排序（默认），2 时间倒序
   limit:
     type: integer
     description: 返回条数上限

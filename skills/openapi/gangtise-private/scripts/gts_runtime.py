@@ -624,6 +624,8 @@ ENDPOINT_POLICIES: Dict[str, Dict[str, Any]] = {
     "/stock-pool/addStock": {"item_failures": True},
     "/stock-pool/deleteStock": {"item_failures": True},
     "/stock-pool/deletePool": {"retry": "no-replay", "item_failures": True},
+    "/stock-pool/addNote": {"retry": "no-replay"},
+    "/stock-pool/deleteNote": {"retry": "no-replay", "item_failures": True},
     "/my-conference/download/file": {"retry": "no-replay"},
     "/record/download/file": {"retry": "no-replay"},
     "/drive/download/file": {"retry": "no-replay"},

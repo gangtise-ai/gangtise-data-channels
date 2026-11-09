@@ -13,7 +13,10 @@
 
 环境变量：
   TOOL_URL_DEPS_PATH      依赖 JSON 路径（默认 $GTS_MCP_ROOT/tool_url_deps.json）
-  MCP_TOOL_BLACKLIST      逗号分隔工具名黑名单；空=不额外屏蔽
+  MCP_TOOL_BLACKLIST      工具/skill 黑名单。支持按子路径追加：
+                          ``A,B,C;doubao:D;progressive:E,F``
+                          主段（无 ``:``）对所有入口生效；``子路径:名`` 仅叠加到该入口。
+                          空=不额外屏蔽
   GANGTISE_DATA_DOMAIN    getList 基址（默认公网 open-data；集群内由 ConfigMap 注入）
   MCP_API_GETLIST_PATH    getList 路径，默认 /api/getList
   MCP_WHITELIST_CACHE_SEC 白名单缓存秒数，默认 300
@@ -26,6 +29,7 @@ import os
 import sys
 import threading
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
@@ -357,26 +361,81 @@ def path_in_whitelist(path: str, whitelist: Set[str]) -> bool:
     return bool(_path_aliases(path) & whitelist)
 
 
-_BLACKLIST_CACHE: Optional[Set[str]] = None
+@dataclass(frozen=True)
+class BlacklistConfig:
+    """主路径黑名单 + 各子路径追加项。"""
+
+    main: Set[str] = field(default_factory=set)
+    by_subpath: Dict[str, Set[str]] = field(default_factory=dict)
+
+    def for_source(self, source: Optional[str] = None) -> Set[str]:
+        src = (source or "").strip().strip("/")
+        extra = self.by_subpath.get(src, set()) if src else set()
+        return set(self.main) | set(extra)
 
 
-def _parse_name_list(raw: str) -> Set[str]:
+_BLACKLIST_CONFIG_CACHE: Optional[BlacklistConfig] = None
+
+
+def _parse_csv_names(raw: str) -> Set[str]:
     out: Set[str] = set()
-    for part in raw.replace("，", ",").replace(";", ",").replace(" ", ",").split(","):
-        name = part.strip()
+    for part in raw.replace("，", ",").split(","):
+        name = part.strip().strip("/")
         if name:
             out.add(name)
     return out
 
 
-def get_tool_blacklist(*, force: bool = False) -> Set[str]:
-    """部署级工具黑名单（环境变量 MCP_TOOL_BLACKLIST）。"""
-    global _BLACKLIST_CACHE
-    if _BLACKLIST_CACHE is not None and not force:
-        return _BLACKLIST_CACHE
-    raw = os.getenv("MCP_TOOL_BLACKLIST", "").strip()
-    _BLACKLIST_CACHE = _parse_name_list(raw)
-    return _BLACKLIST_CACHE
+def parse_tool_blacklist(raw: Optional[str] = None) -> BlacklistConfig:
+    """解析 MCP_TOOL_BLACKLIST。
+
+    格式：``A,B,C;SUB_PATH_A:D;SUB_PATH_B:E,F``
+    - 无冒号的段并入主路径黑名单（对所有入口生效）
+    - ``子路径:工具`` 为该子路径追加（最终 = 主路径 ∪ 追加）
+    """
+    text = raw if raw is not None else os.getenv("MCP_TOOL_BLACKLIST", "")
+    main: Set[str] = set()
+    by_subpath: Dict[str, Set[str]] = {}
+    for segment in (text or "").replace("；", ";").split(";"):
+        seg = segment.strip()
+        if not seg:
+            continue
+        if ":" in seg:
+            left, right = seg.split(":", 1)
+            sp = left.strip().strip("/")
+            if not sp:
+                main |= _parse_csv_names(right)
+                continue
+            by_subpath.setdefault(sp, set()).update(_parse_csv_names(right))
+        else:
+            main |= _parse_csv_names(seg)
+    return BlacklistConfig(main=main, by_subpath=by_subpath)
+
+
+def get_blacklist_config(*, force: bool = False) -> BlacklistConfig:
+    global _BLACKLIST_CONFIG_CACHE
+    if _BLACKLIST_CONFIG_CACHE is not None and not force:
+        return _BLACKLIST_CONFIG_CACHE
+    _BLACKLIST_CONFIG_CACHE = parse_tool_blacklist()
+    return _BLACKLIST_CONFIG_CACHE
+
+
+def get_tool_blacklist(
+    source: Optional[str] = None, *, force: bool = False
+) -> Set[str]:
+    """部署级工具黑名单（主路径 ∪ 当前子路径追加）。
+
+    ``source`` 缺省时取请求 ContextVar（HTTP 子路径）；stdio / 未注入时视为主路径。
+    """
+    cfg = get_blacklist_config(force=force)
+    if source is None:
+        try:
+            from subpath_routing import get_request_mcp_source
+
+            source = get_request_mcp_source()
+        except Exception:
+            source = ""
+    return cfg.for_source(source)
 
 
 def tool_denied_reason(

@@ -1,6 +1,6 @@
 ---
 name: gangtise-data
-description: 通过 Gangtise 金融 Open API 拉取结构化量化数据，覆盖：行情（日K/分钟K/实时快照，A股/港股/美股及交易所/概念/行业指数）、A股日资金流向、估值分位、财务三大报表（含发债公司三表）、主营构成、股东结构、盈利预测（券商一致预期）、行业指标时序（宏观/行业/产品）、公司指标（EDE，A股/港股/美股/债券/基金）、题材指数画像与成分股、板块成分股；证券解析（security）已嵌入各数据脚本，可按证券名称、简称、拼音或代码指代标的，更推荐名称查询。当用户需要可落盘的表格化行情与基本面数据，或题材 Markdown 画像时使用。
+description: 通过 Gangtise 金融 Open API 拉取结构化量化数据，覆盖：行情（日K/分钟K/实时快照，A股/港股/美股及交易所/概念/行业指数）、A股个股与板块日资金流向、估值分位、财务三大报表（含发债公司三表）、主营构成、股东结构、盈利预测（券商一致预期）、行业指标时序（宏观/行业/产品）、公司指标（EDE，A股/港股/美股/债券/基金）、题材指数画像与成分股、板块成分股；证券解析（security）已嵌入各数据脚本，可按证券名称、简称、拼音或代码指代标的，更推荐名称查询。当用户需要可落盘的表格化行情与基本面数据，或题材 Markdown 画像时使用。
 version: 1.7.0
 author: Gangtise
 metadata:
@@ -21,7 +21,7 @@ metadata:
 
 - **估值分析**（多指标并发、历史分位）：`scripts/valuation.py`
 - **行情**（日K / 分钟K / 实时快照，覆盖 A/港/美股与交易所/概念/行业指数；日K 可选全市场、`--adjust` 不复权/前复权/后复权，前复权默认）：`scripts/quote.py`
-- **A 股日资金流向**（小/中/大/特大单及主力净流入，可选全市场）：`scripts/fund_flow.py`
+- **A 股日资金流向**（个股 / 板块 / 全市场；小/中/大/特大单及主力净流入）：`scripts/fund_flow.py`
 - **主营构成**（按产品/行业/地区，可并发全维度）：`scripts/main_business.py`
 - **股东结构**（前十大股东/前十大流通股东）：`scripts/shareholder.py`
 - **财务报表**（利润表/资产负债表/现金流量表）：`scripts/financial.py`
@@ -100,9 +100,9 @@ python3 scripts/quote.py --securities ./codes.csv --limit 8000
 
 详见 [行情数据调用指导](./references/quote.md)。
 
-### 3. 资金流向（A 股日资金流向）
+### 3. 资金流向（个股 / 板块 / 全市场）
 
-基于 open **fund-flow/daily** 接口；仅支持 **A 股**历史资金流向（`.SH` / `.SZ` / `.BJ`），不提供实时数据。默认返回全部**净流入**字段（小/中/大/特大/总/主力）。指定证券时 `-sd/-ed` 不传则由接口按规则默认；**`--all-market`** 时传入 `aShares` 查询全市场，未指定 `-sd/-ed` 则默认查**当天**，无数据逐日向前回退（最多 15 天）。
+基于 open **fund-flow/daily** 与 **fund-flow/sector-daily**；仅历史数据，不含实时。个股仅支持 **A 股**（`.SH` / `.SZ` / `.BJ`）。`--securities`、`--sectors`、`--all-market` 三者互斥。默认返回全部**净流入**字段；板块模式可用个股字段名，脚本自动加 `sector` 前缀。**`--all-market`** 未指定 `-sd/-ed` 时默认查**当天**，无数据逐日向前回退（最多 15 天）。
 
 ```bash
 python3 scripts/fund_flow.py --securities 贵州茅台 -sd 2024-05-01 -ed 2024-05-20
@@ -118,6 +118,11 @@ python3 scripts/fund_flow.py --all-market -l 10
 
 ```bash
 python3 scripts/fund_flow.py --all-market -sd 2024-05-20 -ed 2024-05-20 --limit 8000
+```
+
+```bash
+python3 scripts/fund_flow.py --sectors 1000001065,1000000125 -sd 2024-05-01 -ed 2024-05-20
+python3 scripts/fund_flow.py --sectors 半导体 -sd 2024-05-20 -ed 2024-05-20 --field-list sectorMainNetInflow
 ```
 
 详见 [资金流向调用指导](./references/fund_flow.md)。

@@ -93,6 +93,9 @@ def _format_time_range(start_date: Optional[str] = None, end_date: Optional[str]
     return start_timestamp, end_timestamp
 
 
+_CST = datetime.timezone(datetime.timedelta(hours=8))
+
+
 def _ts_str(ts: Any) -> str:
     if isinstance(ts, (int, float)) and ts and len(str(ts)) == 13:
         return datetime.datetime.fromtimestamp(ts / 1000).strftime("%Y-%m-%d %H:%M:%S")
@@ -101,6 +104,25 @@ def _ts_str(ts: Any) -> str:
     elif isinstance(ts, str) and ts:
         return ts
     return ts or ""
+
+
+def _publish_time_str(raw: Any) -> str:
+    """publishTime：日程信息首次被收录的时间，按东八区展示。与举办时间 startTime 不同。"""
+    if raw is None or raw == "" or isinstance(raw, bool):
+        return ""
+    ts: Optional[int] = None
+    if isinstance(raw, (int, float)):
+        ts = int(raw)
+    else:
+        text = str(raw).strip()
+        if text.isdigit() and len(text) in (10, 13):
+            ts = int(text)
+        else:
+            return text
+    if not ts:
+        return ""
+    seconds = ts / 1000 if len(str(abs(ts))) >= 13 else float(ts)
+    return datetime.datetime.fromtimestamp(seconds, tz=_CST).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _time_window_display(start_ms: Any, end_ms: Any) -> str:
@@ -202,6 +224,7 @@ def _format_row(kind: str, row: dict) -> dict:
         item = {
             "标题": remove_html_tags(row.get("title") or ""),
             "文件时间": file_time,
+            "收录时间": _publish_time_str(row.get("publishTime")),
             "简介": remove_html_tags(row.get("abstractInfo") or ""),
             "路演类型": row.get("category") or "",
             "关联证券": _join_securities(row.get("securityList")),
@@ -224,6 +247,7 @@ def _format_row(kind: str, row: dict) -> dict:
         item = {
             "标题": remove_html_tags(row.get("title") or ""),
             "文件时间": file_time,
+            "收录时间": _publish_time_str(row.get("publishTime")),
             "简介": remove_html_tags(row.get("abstractInfo") or ""),
             "调研类型": row.get("object") or "",
             "调研形式": row.get("category") or "",
@@ -246,6 +270,7 @@ def _format_row(kind: str, row: dict) -> dict:
         item = {
             "标题": remove_html_tags(row.get("title") or ""),
             "文件时间": file_time,
+            "收录时间": _publish_time_str(row.get("publishTime")),
             "牵头机构": _join_institutions(row.get("institutionList")),
             "参会公司": _format_participant_company(row.get("participantCompany")),
             "报名链接": row.get("registrationUrl") or "",
@@ -281,6 +306,7 @@ def _format_row(kind: str, row: dict) -> dict:
     item = {
         "标题": remove_html_tags(row.get("title") or ""),
         "文件时间": file_time,
+        "收录时间": _publish_time_str(row.get("publishTime")),
         "研究方向": _join_ra_concept(row.get("researchAreaList"), "researchAreaId", "researchAreaName"),
         "地点": row.get("location") or "",
         "类型": type_label,
@@ -401,6 +427,8 @@ def _build_payload(
     object_list: Optional[List[str]],
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    publish_start: Optional[int] = None,
+    publish_end: Optional[int] = None,
 ) -> dict:
     payload: dict = {}
 
@@ -422,6 +450,11 @@ def _build_payload(
         payload["startTime"] = start_timestamp
     if end_timestamp is not None:
         payload["endTime"] = end_timestamp
+    # 收录时间与举办时间独立，同时传入时服务端按「与」过滤。
+    if publish_start is not None:
+        payload["publishStartTime"] = publish_start
+    if publish_end is not None:
+        payload["publishEndTime"] = publish_end
 
     if kind == "roadshow":
         if institution_ids:
@@ -477,6 +510,8 @@ def calendar_finder(
     keyword: str = "",
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    publish_start_date: Optional[str] = None,
+    publish_end_date: Optional[str] = None,
     limit: Optional[int] = None,
     securities: Optional[List[str]] = None,
     institutions: Optional[List[str]] = None,
@@ -507,6 +542,10 @@ def calendar_finder(
                     "data": [],
                 },
                 "calendar", output_dir=output_dir)
+        if kind == "performance" and ((publish_start_date or "").strip() or (publish_end_date or "").strip()):
+            raise ValidationError(
+                "财报日历不支持按收录时间过滤，请使用 --start-date/--end-date 按发布日期筛选"
+            )
 
         url = KIND_URL[kind]
         headers = get_authorization_headers()
@@ -545,8 +584,10 @@ def calendar_finder(
             securities_resolved = resolved["codes"]
 
         start_timestamp, end_timestamp = (None, None)
+        publish_start, publish_end = (None, None)
         if kind != "performance":
             start_timestamp, end_timestamp = _format_time_range(start_date, end_date)
+            publish_start, publish_end = _format_time_range(publish_start_date, publish_end_date)
 
         payload_base = _build_payload(
             kind,
@@ -563,6 +604,8 @@ def calendar_finder(
             object_list,
             start_date=start_date,
             end_date=end_date,
+            publish_start=publish_start,
+            publish_end=publish_end,
         )
 
         keyword_str = (keyword or "").strip()
@@ -679,13 +722,29 @@ def main():
         "-sd",
         "--start-date",
         default="",
-        help="开始日期 YYYY-MM-DD（路演等转为时间戳；财报日历为 publishDate 过滤的 startDate）",
+        help="举办开始日期 YYYY-MM-DD（路演等转为 startTime；财报日历为 publishDate 过滤的 startDate）",
     )
     parser.add_argument(
         "-ed",
         "--end-date",
         default="",
-        help="结束日期 YYYY-MM-DD（路演等含全天；财报日历为 publishDate 过滤的 endDate）",
+        help="举办结束日期 YYYY-MM-DD（路演等含全天，转为 endTime；财报日历为 publishDate 过滤的 endDate）",
+    )
+    parser.add_argument(
+        "--publish-start-date",
+        default="",
+        help=(
+            "收录开始时间 YYYY-MM-DD 或 YYYY-MM-DD HH:mm:ss，转为 publishStartTime。"
+            "仅路演/调研/线下策略会/论坛。与 --start-date/--end-date（举办时间）同时传入时为「与」关系"
+        ),
+    )
+    parser.add_argument(
+        "--publish-end-date",
+        default="",
+        help=(
+            "收录结束时间，格式同 --publish-start-date；只传日期时含当天全天，转为 publishEndTime。"
+            "不传则不按收录时间过滤"
+        ),
     )
     parser.add_argument("-l", "--limit", default=None, type=int, help="返回条数上限；不传时检索默认见 FILE_DEFAULT_LIMIT，开启 -d 下载时默认 10")
     parser.add_argument(
@@ -780,6 +839,8 @@ def main():
         keyword=args.keyword or "",
         start_date=args.start_date or None,
         end_date=args.end_date or None,
+        publish_start_date=args.publish_start_date or None,
+        publish_end_date=args.publish_end_date or None,
         limit=args.limit,
         securities=securities,
         institutions=institutions,

@@ -24,11 +24,15 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 DOMAIN_PKGS = (
     "gangtise_agent",
+    "gangtise_bond",
     "gangtise_data",
     "gangtise_file",
+    "gangtise_fund",
     "gangtise_kb",
-    "gangtise_private",
     "gangtise_pdf",
+    "gangtise_private",
+    "gangtise_screener",
+    "gangtise_web",
 )
 
 SKIP_MODULES = frozenset(
@@ -202,9 +206,17 @@ def parse_tool_names(registry_path: Path) -> Dict[str, str]:
     return tools
 
 
-def scan_package(pkg_dir: Path, pkg_name: str) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
-    """返回 (tool → path 列表, 本包 const→path)。"""
-    src = pkg_dir / "src" / pkg_name
+def _package_src_dirs(mcp_root: Path, pkg_name: str) -> List[Path]:
+    """兼容旧布局 mcp/<pkg>/src/<pkg> 与 generate 后的 mcp/src/_generated/handlers/<pkg>。"""
+    candidates = [
+        mcp_root / "src" / "_generated" / "handlers" / pkg_name,
+        mcp_root / pkg_name / "src" / pkg_name,
+    ]
+    return [p for p in candidates if p.is_dir()]
+
+
+def scan_package(src: Path) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
+    """返回 (tool → path 列表, 本包 const→path)。src 为工具脚本所在目录。"""
     if not src.is_dir():
         return {}, {}
     registry = src / "tools_registry.py"
@@ -241,10 +253,18 @@ def scan_mcp_root(mcp_root: Path, packages: Iterable[str] = DOMAIN_PKGS) -> dict
     by_package: Dict[str, Dict[str, List[str]]] = {}
     url_constants: Dict[str, str] = {}
     for pkg in packages:
-        pkg_dir = mcp_root / pkg
-        if not pkg_dir.is_dir():
+        pkg_tools: Dict[str, List[str]] = {}
+        const_map: Dict[str, str] = {}
+        for src in _package_src_dirs(mcp_root, pkg):
+            scanned_tools, scanned_consts = scan_package(src)
+            const_map.update(scanned_consts)
+            for name, paths in scanned_tools.items():
+                if name in pkg_tools and pkg_tools[name] != paths:
+                    pkg_tools[name] = sorted(set(pkg_tools[name]) | set(paths))
+                else:
+                    pkg_tools[name] = paths
+        if not pkg_tools and not const_map:
             continue
-        pkg_tools, const_map = scan_package(pkg_dir, pkg)
         by_package[pkg] = pkg_tools
         url_constants.update(const_map)
         for name, paths in pkg_tools.items():

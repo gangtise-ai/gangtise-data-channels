@@ -11,9 +11,14 @@
   GTS_OAUTH_ISSUER   — 授权服务器 issuer（authorization_servers）；可与 resource 不同（中台独立 AS）
                        未设时回退为本服务公网基址
                        与本服务 resource 不同时：本机只做 Protected Resource，
-                       /oauth/register|/token 代理到中台，/oauth/authorize GET 302 到中台
-                       （兼容 Cherry 等对 MCP 主机直接做 DCR 的客户端）
+                       MCP 路径下的 /oauth/*、well-known 发现文档转发到 UPSTREAM，
+                       /oauth/authorize GET 302 到公网 ISSUER（浏览器打不开内网）
+                       （兼容 Cherry / WorkBuddy 等对 MCP 主机直接探 AS 的客户端）
                        例：https://auth.gangtise.com
+  GTS_OAUTH_UPSTREAM — 外部 AS 时本机转发基址（可与 ISSUER 不同）
+                       默认 https://auth.gangtise.com
+                       集群内建议填内网，例：
+                       http://workbuddy-connector-server.platform-business:15684
   GTS_OAUTH_SCOPES   — PR metadata 的 scopes_supported，逗号或空格分隔，默认 mcp；
                        使用外部 AS 时须与其 scopes_supported 一致，例：mcp.read mcp.write
   GTS_OAUTH_ACCESS_TTL   — access 秒数，默认 3600
@@ -27,6 +32,7 @@
 端点（规范路径 + README 回退别名）：
   GET  /.well-known/oauth-protected-resource
   GET  /.well-known/oauth-authorization-server
+  GET  /.well-known/openid-configuration
   POST /oauth/register  | /register
   GET/POST /oauth/authorize | /authorize
   POST /oauth/token     | /token
@@ -63,6 +69,21 @@ CODE_TTL_SEC = 600
 CAPTCHA_TTL_SEC = 600
 JWT_ALG = "HS256"
 JWT_ISS_CLAIM = "gts_mcp"
+DEFAULT_OAUTH_UPSTREAM = "https://auth.gangtise.com"
+
+# 转发到中台 AS 时透传的客户端 IP / 代理链头（大小写不敏感匹配入站）
+_PROXY_IP_HEADER_NAMES = (
+    "x-forwarded-for",
+    "x-real-ip",
+    "proxy-client-ip",
+    "wl-proxy-client-ip",
+    "http_client_ip",
+    "http_x_forwarded_for",
+    "forwarded",
+    "x-forwarded-proto",
+    "x-forwarded-host",
+    "x-forwarded-port",
+)
 
 _CONSENT_TEMPLATE_PATH = Path(__file__).resolve().parent / "oauth_consent.html"
 _consent_template_cache: Optional[str] = None
@@ -226,22 +247,40 @@ def oauth_challenge_enabled() -> bool:
     return False
 
 
-def _external_as_endpoint(request: Optional[Request], path: str) -> str:
-    issuer = resolve_public_base(request).rstrip("/")
+def resolve_oauth_upstream() -> str:
+    """外部 AS 转发基址（无尾斜杠）。
+
+    优先 GTS_OAUTH_UPSTREAM；未设时回退 GTS_OAUTH_ISSUER；再回退公网默认。
+    浏览器 302 / authorization_servers 仍用 resolve_public_base（ISSUER），不要用内网 upstream。
+    """
+    explicit = (os.getenv("GTS_OAUTH_UPSTREAM") or "").strip().rstrip("/")
+    if explicit:
+        return explicit
+    issuer = (os.getenv("GTS_OAUTH_ISSUER") or "").strip().rstrip("/")
+    if issuer:
+        return issuer
+    return DEFAULT_OAUTH_UPSTREAM
+
+
+def _join_upstream_path(base: str, path: str) -> str:
+    root = (base or "").rstrip("/")
     if not path.startswith("/"):
         path = "/" + path
-    return f"{issuer}{path}"
+    return f"{root}{path}"
 
 
-async def _proxy_external_as(request: Request, path: str) -> Response:
-    """把本机 AS 路径转发到中台（Cherry 等客户端常对 resource 主机做 DCR）。
+def _external_as_public_endpoint(request: Optional[Request], path: str) -> str:
+    """浏览器 / 元数据用的公网 AS 端点（GTS_OAUTH_ISSUER）。"""
+    return _join_upstream_path(resolve_public_base(request), path)
 
-    不在本机签发 client_id；响应体原样来自中台。
-    """
-    import requests
 
-    url = _external_as_endpoint(request, path)
-    body = await request.body()
+def _external_as_upstream_endpoint(path: str) -> str:
+    """集群内转发用的 AS 端点（GTS_OAUTH_UPSTREAM）。"""
+    return _join_upstream_path(resolve_oauth_upstream(), path)
+
+
+def _proxy_forward_headers(request: Request) -> Dict[str, str]:
+    """组装转发头：业务头 + 入站 IP/代理链头；缺 XFF 时用解析出的客户端 IP 补上。"""
     headers: Dict[str, str] = {}
     if request.headers.get("content-type"):
         headers["Content-Type"] = request.headers["content-type"]
@@ -249,12 +288,57 @@ async def _proxy_external_as(request: Request, path: str) -> Response:
         headers["Accept"] = request.headers["accept"]
     if request.headers.get("authorization"):
         headers["Authorization"] = request.headers["authorization"]
+
+    present = {k.lower() for k in headers}
+    for name in _PROXY_IP_HEADER_NAMES:
+        if name in present:
+            continue
+        raw = request.headers.get(name)
+        if raw is None or not str(raw).strip():
+            continue
+        # 保留常见规范大小写，便于下游识别
+        if name == "x-forwarded-for":
+            out_name = "X-Forwarded-For"
+        elif name == "x-real-ip":
+            out_name = "X-Real-IP"
+        elif name == "x-forwarded-proto":
+            out_name = "X-Forwarded-Proto"
+        elif name == "x-forwarded-host":
+            out_name = "X-Forwarded-Host"
+        elif name == "x-forwarded-port":
+            out_name = "X-Forwarded-Port"
+        elif name == "forwarded":
+            out_name = "Forwarded"
+        else:
+            out_name = "-".join(p.capitalize() for p in name.split("-"))
+        headers[out_name] = str(raw).strip()
+        present.add(name)
+
     try:
         from authorization import apply_downstream_headers
 
         apply_downstream_headers(headers)
     except Exception:
         pass
+
+    # 入站无任何 IP 头、ContextVar 也未写入时，用连接对端兜底
+    if not any(k.lower() == "x-forwarded-for" for k in headers):
+        ip = _client_ip(request)
+        if ip and ip != "unknown":
+            headers["X-Forwarded-For"] = ip
+    return headers
+
+
+async def _proxy_external_as(request: Request, path: str) -> Response:
+    """把本机 AS 路径转发到中台（Cherry / WorkBuddy 等常对 MCP 主机探 OAuth）。
+
+    不在本机签发 client_id；响应体原样来自中台。Host 由 upstream URL 决定，不透传入站 Host。
+    """
+    import requests
+
+    url = _external_as_upstream_endpoint(path)
+    body = await request.body()
+    headers = _proxy_forward_headers(request)
     try:
         resp = requests.request(
             method=request.method,
@@ -263,7 +347,7 @@ async def _proxy_external_as(request: Request, path: str) -> Response:
             data=body if body else None,
             headers=headers,
             timeout=45,
-            allow_redirects=True,
+            allow_redirects=False,
         )
     except requests.RequestException as exc:
         return JSONResponse(
@@ -274,12 +358,22 @@ async def _proxy_external_as(request: Request, path: str) -> Response:
             status_code=502,
         )
     media = (resp.headers.get("Content-Type") or "application/json").split(";")[0].strip()
-    return Response(content=resp.content, status_code=resp.status_code, media_type=media or None)
+    out_headers: Dict[str, str] = {}
+    # 浏览器授权偶发经本机 POST 代理时，透传 Location
+    location = resp.headers.get("Location")
+    if location:
+        out_headers["Location"] = location
+    return Response(
+        content=resp.content,
+        status_code=resp.status_code,
+        media_type=media or None,
+        headers=out_headers or None,
+    )
 
 
 def _redirect_external_authorize(request: Request) -> RedirectResponse:
-    """浏览器授权：302 到中台，带上原 query。"""
-    target = _external_as_endpoint(request, "/oauth/authorize")
+    """浏览器授权：302 到公网 ISSUER（不要跳内网 UPSTREAM），带上原 query。"""
+    target = _external_as_public_endpoint(request, "/oauth/authorize")
     q = request.url.query
     if q:
         target = f"{target}?{q}"
@@ -806,9 +900,21 @@ def _authorization_server_metadata(issuer: str) -> dict:
 async def oauth_authorization_server(request: Request) -> Response:
     if not oauth_challenge_enabled():
         return _disabled()
-    # 中台独立 AS：本机不是授权服务器，metadata 必须指向中台，客户端才会去中台 refresh / 重新授权
+    # 中台独立 AS：把发现文档原样转到 UPSTREAM（客户端常在 MCP 主机探 AS）
     if uses_external_authorization_server(request):
-        return JSONResponse(_authorization_server_metadata(resolve_public_base(request)))
+        return await _proxy_external_as(request, "/.well-known/oauth-authorization-server")
+    if not oauth_enabled():
+        return _disabled()
+    issuer = resolve_service_public_base(request)
+    return JSONResponse(_authorization_server_metadata(issuer))
+
+
+async def openid_configuration(request: Request) -> Response:
+    """OIDC 发现文档。WorkBuddy 等会在 MCP 路径下探 /.well-known/openid-configuration。"""
+    if not oauth_challenge_enabled():
+        return _disabled()
+    if uses_external_authorization_server(request):
+        return await _proxy_external_as(request, "/.well-known/openid-configuration")
     if not oauth_enabled():
         return _disabled()
     issuer = resolve_service_public_base(request)
@@ -1185,6 +1291,7 @@ async def health(request: Request) -> Response:
             "oauth_external_as": external,
             "resource": public_resource_url(request) if oauth_on else None,
             "issuer": resolve_public_base(request) if oauth_on else None,
+            "upstream": resolve_oauth_upstream() if external else None,
         }
     )
 
@@ -1195,6 +1302,7 @@ def oauth_routes() -> List[Route]:
         Route("/health", endpoint=health, methods=["GET"]),
         Route("/.well-known/oauth-protected-resource", endpoint=oauth_protected_resource, methods=["GET"]),
         Route("/.well-known/oauth-authorization-server", endpoint=oauth_authorization_server, methods=["GET"]),
+        Route("/.well-known/openid-configuration", endpoint=openid_configuration, methods=["GET"]),
         Route("/oauth/register", endpoint=register_client, methods=["POST"]),
         Route("/register", endpoint=register_client, methods=["POST"]),
         Route("/oauth/authorize", endpoint=authorize, methods=["GET", "POST"]),

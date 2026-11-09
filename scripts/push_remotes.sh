@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 推送到多 remote：
-#   gitee / github — 正常推送（不含 ali_mcp_credential.py）
-#   gitlab         — 额外 force-add 该私有文件后再推（供内网构建）
+#   github → main；gitee → master（本地通常仍叫 main）
+#   公开仓不含 ali_mcp_credential.py
+#   gitlab → 额外 force-add 该私有文件后再推（供内网构建）
 #
 # 用法：
 #   ./scripts/push_remotes.sh              # 推当前分支到 gitee、github、gitlab
@@ -14,6 +15,9 @@ cd "${ROOT}"
 
 BRANCH="$(git branch --show-current)"
 PRIVATE_FILE="mcp/src/ali_mcp_credential.py"
+GITEE_BRANCH="master"
+GITHUB_BRANCH="main"
+GITLAB_BRANCH="main"
 MODE="all"
 
 for arg in "$@"; do
@@ -21,7 +25,7 @@ for arg in "$@"; do
     --public) MODE="public" ;;
     --gitlab) MODE="gitlab" ;;
     -h|--help)
-      sed -n '2,12p' "$0"
+      sed -n '2,14p' "$0"
       exit 0
       ;;
     *)
@@ -42,26 +46,26 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 push_public() {
-  echo "==> git push gitee ${BRANCH}"
-  git push gitee "${BRANCH}"
-  echo "==> git push github ${BRANCH}"
-  git push github "${BRANCH}"
+  echo "==> git push gitee ${BRANCH}:${GITEE_BRANCH}"
+  git push gitee "${BRANCH}:${GITEE_BRANCH}"
+  echo "==> git push github ${BRANCH}:${GITHUB_BRANCH}"
+  git push github "${BRANCH}:${GITHUB_BRANCH}"
 }
 
 push_gitlab_with_private() {
   if [[ ! -f "${PRIVATE_FILE}" ]]; then
     echo "==> 缺少 ${PRIVATE_FILE}，gitlab 仅推当前提交" >&2
-    git push gitlab "${BRANCH}"
+    git push gitlab "${BRANCH}:${GITLAB_BRANCH}"
     return 0
   fi
 
-  echo "==> gitlab：临时纳入 ${PRIVATE_FILE} 后推送"
+  echo "==> gitlab：临时纳入 ${PRIVATE_FILE} 后推送 ${BRANCH}:${GITLAB_BRANCH}"
   local before
   before="$(git rev-parse HEAD)"
   git add -f "${PRIVATE_FILE}"
   if git diff --cached --quiet; then
     echo "（私有文件相对 HEAD 无变化，直接推送）"
-    git push gitlab "${BRANCH}"
+    git push --force-with-lease gitlab "${BRANCH}:${GITLAB_BRANCH}"
     return 0
   fi
 
@@ -71,7 +75,7 @@ internal: include ali_mcp_credential.py for GitLab builds
 EOF
 )"
   # 内网仓允许 --force-with-lease：gitlab tip 常比公开仓多这一笔私有提交
-  git push --force-with-lease gitlab "${BRANCH}"
+  git push --force-with-lease gitlab "HEAD:${GITLAB_BRANCH}"
 
   git reset --soft "${before}"
   git restore --staged "${PRIVATE_FILE}"

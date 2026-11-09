@@ -20,6 +20,8 @@ def _allow_all(monkeypatch):
     monkeypatch.setattr(skill_tools, "tool_denied_reason", lambda name, wl=None: None)
     monkeypatch.delenv("MCP_TOOL_EXPOSURE", raising=False)
     monkeypatch.delenv("MCP_TOOL_BLACKLIST", raising=False)
+    monkeypatch.delenv("MCP_PROGRESSIVE_SUBPATH", raising=False)
+    monkeypatch.delenv("SUBPATHS_MODE", raising=False)
     url_whitelist.get_tool_blacklist(force=True)
     yield
     url_whitelist.get_tool_blacklist(force=True)
@@ -160,3 +162,80 @@ def test_blacklisted_skill_is_hidden_and_forbidden(monkeypatch):
     assert "nav" not in _schema(fund)["properties"]["function"]["enum"]
     assert json.loads(_text(_call("gangtise-web", {"function": "web_search"})))["code"] == "FORBIDDEN"
     assert json.loads(_text(_call("gangtise-fund", {"function": "nav"})))["code"] == "FORBIDDEN"
+
+
+def test_blacklist_subpath_extends_main(monkeypatch):
+    monkeypatch.setenv(
+        "MCP_TOOL_BLACKLIST",
+        "gangtise-web,fund_nav;doubao:bond_quote;progressive:gangtise-private",
+    )
+    url_whitelist.get_tool_blacklist(force=True)
+    assert url_whitelist.get_tool_blacklist("") == {"gangtise-web", "fund_nav"}
+    assert url_whitelist.get_tool_blacklist("doubao") == {
+        "gangtise-web",
+        "fund_nav",
+        "bond_quote",
+    }
+    assert url_whitelist.get_tool_blacklist("progressive") == {
+        "gangtise-web",
+        "fund_nav",
+        "gangtise-private",
+    }
+    assert url_whitelist.get_tool_blacklist("ali") == {"gangtise-web", "fund_nav"}
+
+
+def test_progressive_subpath_forces_skill_exposure(monkeypatch):
+    import subpath_routing
+
+    monkeypatch.setenv("SUBPATHS_MODE", "progressive:progressive")
+    monkeypatch.delenv("MCP_TOOL_EXPOSURE", raising=False)
+    assert skill_tools.exposure_mode() == "leaf"
+    token = subpath_routing.set_request_mcp_source("progressive")
+    try:
+        assert skill_tools.exposure_mode() == "skill"
+        names = [t.name for t in skill_tools.list_tools()]
+        assert "gangtise-file" in names
+        assert "fund_nav" not in names
+    finally:
+        subpath_routing.reset_request_mcp_source(token)
+    assert skill_tools.exposure_mode() == "leaf"
+    assert "fund_nav" in {t.name for t in skill_tools.list_tools()}
+
+
+def test_subpaths_mode_defaults_unlisted_to_leaf(monkeypatch):
+    import subpath_routing
+
+    monkeypatch.setenv("SUBPATHS", "A,B")
+    monkeypatch.setenv("SUBPATHS_MODE", "B:progressive")
+    monkeypatch.delenv("MCP_TOOL_EXPOSURE", raising=False)
+    assert skill_tools.exposure_mode() == "leaf"
+    tok_a = subpath_routing.set_request_mcp_source("A")
+    try:
+        assert skill_tools.exposure_mode() == "leaf"
+        assert "fund_nav" in {t.name for t in skill_tools.list_tools()}
+    finally:
+        subpath_routing.reset_request_mcp_source(tok_a)
+    tok_b = subpath_routing.set_request_mcp_source("B")
+    try:
+        assert skill_tools.exposure_mode() == "skill"
+        assert "gangtise-file" in {t.name for t in skill_tools.list_tools()}
+        assert "fund_nav" not in {t.name for t in skill_tools.list_tools()}
+    finally:
+        subpath_routing.reset_request_mcp_source(tok_b)
+
+
+def test_progressive_subpath_blacklist_applies(monkeypatch):
+    import subpath_routing
+
+    monkeypatch.setenv("SUBPATHS_MODE", "progressive:progressive")
+    monkeypatch.setenv("MCP_TOOL_BLACKLIST", "fund_nav;progressive:gangtise-web")
+    url_whitelist.get_tool_blacklist(force=True)
+    monkeypatch.setattr(skill_tools, "tool_denied_reason", url_whitelist.tool_denied_reason)
+    token = subpath_routing.set_request_mcp_source("progressive")
+    try:
+        names = [t.name for t in skill_tools.list_tools()]
+        assert "gangtise-web" not in names
+        assert "gangtise-file" in names
+        assert json.loads(_text(_call("gangtise-web", {"function": "web_search"})))["code"] == "FORBIDDEN"
+    finally:
+        subpath_routing.reset_request_mcp_source(token)

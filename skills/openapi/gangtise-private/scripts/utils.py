@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional, Tuple
 import hashlib
 import pandas as pd
 import datetime
-import time
+import uuid
 import requests
 import json
 
@@ -69,6 +69,10 @@ UPDATE_POOL_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/updatePool"
 DELETE_POOL_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/deletePool"
 ADD_STOCK_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/addStock"
 DELETE_STOCK_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/deleteStock"
+GET_NOTE_LIST_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/getNoteList"
+ADD_NOTE_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/addNote"
+UPDATE_NOTE_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/updateNote"
+DELETE_NOTE_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/deleteNote"
 MY_CONFERENCE_LIST_URL = GANGTISE_VAULT_DOMAIN + "/my-conference/getList"
 MY_CONFERENCE_DOWNLOAD_URL = GANGTISE_VAULT_DOMAIN + "/my-conference/download/file"
 RECORD_LIST_URL = GANGTISE_VAULT_DOMAIN + "/record/getList"
@@ -243,6 +247,27 @@ def _format_file_record_text(file: dict, method_name: str, module_name: str, out
         lines.append(f"file-id：{file['类型ID']}")
     return "\n".join(lines)
 
+def _unique_result_path(process_dir: str, module_name: str, extension: str) -> str:
+    """日期、微秒和随机后缀独占创建，避免只靠时分秒重名。"""
+    os.makedirs(process_dir, exist_ok=True)
+    ext = (extension or "dat").lstrip(".") or "dat"
+    stem = module_name or "result"
+    for _ in range(8):
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        suffix = uuid.uuid4().hex[:8]
+        path = os.path.join(process_dir, f"{stem}_{stamp}_{suffix}.{ext}")
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            continue
+        except OSError:
+            continue
+        else:
+            os.close(fd)
+            return path
+    raise RuntimeError("结果文件无法写入，请稍后重试")
+
+
 def _alloc_workspace_path(
     method_name: str,
     module_name: str,
@@ -260,17 +285,10 @@ def _alloc_workspace_path(
         if os.path.exists(process_path):
             return process_path, "exist"
         return process_path, None
-    now = datetime.datetime.now().strftime("%H%M%S")
-    process_path = os.path.join(process_dir, f"{module_name}_{now}.{extension}")
-    max_retries = 10
-    while os.path.exists(process_path) and max_retries > 0:
-        time.sleep(1)
-        now = datetime.datetime.now().strftime("%H%M%S")
-        process_path = os.path.join(process_dir, f"{module_name}_{now}.{extension}")
-        max_retries -= 1
-    if max_retries == 0:
-        return None, "错误信息：文件存储系统繁忙，请稍后再试"
-    return process_path, None
+    try:
+        return _unique_result_path(process_dir, module_name, extension), None
+    except RuntimeError as exc:
+        return None, f"错误信息：{exc}"
 
 def format_response(
     response: dict,
@@ -300,7 +318,7 @@ def format_response(
 
     return_message = response.get("message", "") + "\n\n" if response.get("message", "") else ""
     method_name_map = {
-        "stockpool": "自选股股票池",
+        "stockpool": "股票池",
         "wechat_message": "微信群消息",
         "private_meeting": "我的会议",
         "private_record": "录音速记",
@@ -309,6 +327,7 @@ def format_response(
     module_name_map = {
         "stockpool_pools": "股票池列表",
         "stockpool_stocks": "证券明细",
+        "stockpool_notes": "个股笔记",
         "wechat_chatroom": "微信群列表",
         "wechat_message": "群消息",
         "private_meeting_list": "会议列表",

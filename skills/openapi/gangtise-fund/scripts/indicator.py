@@ -71,7 +71,11 @@ CALENDAR_TYPE_VALUES: Dict[str, str] = {
     "WD": "WD",
     "wd": "WD",
     "工作日": "WD",
+    "RD": "RD",
+    "rd": "RD",
+    "报告期": "RD",
 }
+CALENDAR_AXIS_LABEL = {"ND": "自然日", "TD": "交易日", "WD": "工作日", "RD": "报告期"}
 SCALE_VALUES: Dict[str, str] = {
     "0": "0",
     "个": "0",
@@ -817,10 +821,6 @@ def _usage_from_cells(cell_count: int) -> float:
     return math.ceil(cell_count / 100) * POINTS_PER_100_CELLS
 
 
-# calendarType 自动选择：服务端默认 ND（自然日）。仅当每个指标的 parameterList 都含 tradeDate、且都不含
-# reportDate / fiscalYear 时才用 TD；报告期指标的值落在 3-31、6-30 等可能是周末的日期上，TD 轴会把它们整列丢成 null。
-TRADE_DATE_KEY = "tradeDate"
-PERIOD_DATE_KEYS = ("reportDate", "fiscalYear")
 FISCAL_YEAR_FALLBACK_CODES = frozenset({"div_cash_yr", "div_cash_paid_ratio"})
 
 
@@ -852,12 +852,11 @@ def _param_keys(item: Optional[dict]) -> List[str]:
     return [str(p.get("paramKey")) for p in (item.get("parameterList") or []) if isinstance(p, dict) and p.get("paramKey")]
 
 
-def _auto_calendar_type(items: Dict[str, Optional[dict]], codes: List[str]) -> Optional[str]:
-    for code in codes:
-        keys = _param_keys(items.get(code))
-        if not keys or any(k in PERIOD_DATE_KEYS for k in keys) or TRADE_DATE_KEY not in keys:
-            return None
-    return "TD" if codes else None
+def _calendar_axis_label(calendar_type: Optional[str]) -> str:
+    """未传 calendarType 时，日期轴由服务端按指标决定。"""
+    if not calendar_type:
+        return "按指标自动"
+    return CALENDAR_AXIS_LABEL.get(str(calendar_type), str(calendar_type))
 
 
 def _missing_fiscal_year(
@@ -1019,7 +1018,8 @@ def indicator_get(
     total_cells = 0
 
     indicator_items = _lookup_indicator_items(headers, indicators)
-    calendar_type = root_opts.get("calendarType") or _auto_calendar_type(indicator_items, indicators)
+    # 不传时服务端按指标返回交易日、报告期或两者并集；只有显式传入才固定日期类型。
+    calendar_type = root_opts.get("calendarType") or None
     base_payload: Dict[str, Any] = {
         "startDate": start_date,
         "endDate": end_date,
@@ -1089,7 +1089,7 @@ def indicator_get(
         usage["ede_indicator_get"] = usage.get("ede_indicator_get", 0) + _usage_from_cells(total_cells)
 
     title = f"{len(indicators)} 个指标 × {len(codes)} 只证券"
-    axis = "交易日" if calendar_type == "TD" else ("自然日（服务端默认）" if not calendar_type else calendar_type)
+    axis = _calendar_axis_label(calendar_type)
     msg = f"已获取{title}{api_label}数据（{start_date} 至 {end_date}，日期轴：{axis}）"
     if usage_note:
         msg += f"\n{usage_note}"
@@ -1244,7 +1244,10 @@ def main():
         "-p",
         "--params",
         default=None,
-        help='指标参数字典 JSON：scale/量纲、calendarType/日期类型 支持中文键与枚举值；其余见 references/indicator.md',
+        help=(
+            "指标参数字典 JSON：scale/量纲、calendarType/日期类型（ND 自然日、TD 交易日、WD 工作日、RD 报告期，支持中文）。"
+            "不传 calendarType 时由服务端按指标返回日期序列。其余见 references/indicator.md"
+        ),
     )
     parser.add_argument(
         "-od",

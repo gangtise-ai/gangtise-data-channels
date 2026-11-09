@@ -13,6 +13,7 @@ if __name__ == "__main__" and not __package__:
 import os
 import datetime
 import json
+import uuid
 from typing import Any, Dict, Optional, Tuple
 
 import requests
@@ -92,27 +93,38 @@ def resolve_gangtise_workspace_path() -> str:
 gangtise_workspace_path = resolve_gangtise_workspace_path()
 
 
+def _unique_result_path(process_dir: str, module_name: str, extension: str) -> str:
+    """日期、微秒和随机后缀独占创建，避免只靠时分秒重名。"""
+    os.makedirs(process_dir, exist_ok=True)
+    ext = (extension or "dat").lstrip(".") or "dat"
+    stem = module_name or "result"
+    for _ in range(8):
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        suffix = uuid.uuid4().hex[:8]
+        path = os.path.join(process_dir, f"{stem}_{stamp}_{suffix}.{ext}")
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            continue
+        except OSError:
+            continue
+        else:
+            os.close(fd)
+            return path
+    raise RuntimeError("结果文件无法写入，请稍后重试")
+
+
 def alloc_result_path(
     method_name: str,
     module_name: str,
     extension: str,
     output_dir: Optional[str] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
-    import time
-
     process_dir = output_dir or os.path.join(gangtise_workspace_path, method_name)
-    os.makedirs(process_dir, exist_ok=True)
-    now = datetime.datetime.now().strftime("%H%M%S")
-    process_path = os.path.join(process_dir, f"{module_name}_{now}.{extension}")
-    max_retries = 10
-    while os.path.exists(process_path) and max_retries > 0:
-        time.sleep(1)
-        now = datetime.datetime.now().strftime("%H%M%S")
-        process_path = os.path.join(process_dir, f"{module_name}_{now}.{extension}")
-        max_retries -= 1
-    if max_retries == 0:
-        return None, "错误信息：文件存储系统繁忙，请稍后再试"
-    return process_path, None
+    try:
+        return _unique_result_path(process_dir, module_name, extension), None
+    except RuntimeError as exc:
+        return None, f"错误信息：{exc}"
 
 
 OPENAPI_SKILL_VERSION = "1.7.0"

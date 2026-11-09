@@ -45,4 +45,7 @@ parameters:
       - html_zh
   title:
     type: string
-    description: 可选自定义保存文件名（不含路径）
+    description: |
+      检索结果中的标题，不含路径。
+      download/file 的 Content-Disposition 通常只有数字资源号（如 846933328228.pdf），
+      传入标题后，数字文件名会改成该标题再保存。

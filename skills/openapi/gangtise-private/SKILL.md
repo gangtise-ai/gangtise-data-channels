@@ -1,7 +1,7 @@
 ---
 name: gangtise-private
-description: 通过 Gangtise Open API 读取终端个人私有数据（自选股股票池、微信群消息、我的会议、录音速记、AI云盘等），结果可落盘 CSV/md，便于衔接 gangtise-data、gangtise-file 等技能。仅可访问当前授权用户本人数据。
-version: 1.7.0
+description: 通过 Gangtise Open API 读取终端个人私有数据（个人自选股与所属租户股票池、个股投资笔记、微信群消息、我的会议、录音速记、AI云盘等），结果可落盘 CSV/md，便于衔接 gangtise-data、gangtise-file 等技能。仅可访问当前授权用户有权查看的数据。
+version: 1.8.0
 author: Gangtise
 metadata:
   category: openapi
@@ -15,7 +15,7 @@ metadata:
 
 | 脚本 | 能力 |
 |------|------|
-| `scripts/stockpool.py` | 自选股股票池：列表 + 池内证券（`search` / `get`），创建/重命名/删除池、添加/移除证券（`create` / `rename` / `delete` / `add_stock` / `delete_stock`） |
+| `scripts/stockpool.py` | 个人自选股与所属租户股票池：列表 + 池内证券（`search` / `get`，`--space-type` 1/2），创建/重命名/删除池、添加/移除证券（仅个人池），以及个股笔记（`search_note` / `add_note` / `update_note` / `delete_note`） |
 | `scripts/wechat_message.py` | 微信群消息：`search` / `get` |
 | `scripts/private_meeting.py` | 我的会议：列表 + 下载 ASR/速记，`search` / `get` |
 | `scripts/private_record.py` | 录音速记：列表 + 下载原始/ASR/速记，`search` / `get` |
@@ -57,9 +57,9 @@ metadata:
 
 ## 使用说明
 
-### 1. 自选股股票池
+### 1. 股票池
 
-基于 **getPoolList** / **getStockList**：
+基于 **getPoolList** / **getStockList** / **getNoteList** 等。`--space-type` 默认 `1`（个人自选股）；`2` 为所属租户股票池。查询证券明细时须与股票池 ID 使用同一区域。创建、重命名、删除、加减证券仍只针对个人池。个股笔记仅本人可见，与是否关注无关。
 
 ```bash
 python3 scripts/stockpool.py -m search
@@ -78,11 +78,24 @@ python3 scripts/stockpool.py --all
 ```
 
 ```bash
+python3 scripts/stockpool.py -m search --space-type 2
+python3 scripts/stockpool.py --space-type 2 --pool 908477301,908477302
+python3 scripts/stockpool.py --space-type 2 --all
+```
+
+```bash
 python3 scripts/stockpool.py -m create --pool-name 核心持仓
 python3 scripts/stockpool.py -m add_stock --pool 核心持仓 --securities 688106.SH,00700.HK
 ```
 
-详见 [自选股股票池调用指导](./references/stockpool.md)。
+```bash
+python3 scripts/stockpool.py -m search_note --all-notes
+python3 scripts/stockpool.py -m add_note --securities 688106.SH --note-content "跟踪订单落地节奏"
+python3 scripts/stockpool.py -m update_note --note-ids 1835 --note-content "季报确认加速"
+python3 scripts/stockpool.py -m delete_note --note-ids 1835 --yes
+```
+
+详见 [股票池调用指导](./references/stockpool.md)。
 
 ### 2. 微信群消息
 

@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # from logging.handlers import TimedRotatingFileHandler
 import pandas as pd
 import datetime
-import time
+import uuid
 import requests
 import json
 
@@ -70,6 +70,7 @@ SECTOR_SEARCH_URL = GANGTISE_REFERENCE_DOMAIN + "/sectors/search"
 SECTOR_CONSTITUENTS_URL = GANGTISE_REFERENCE_DOMAIN + "/sectors/constituents"
 QUOTE_URL = GANGTISE_QUOTE_DOMAIN + "/kline/daily"
 FUND_FLOW_DAILY_URL = GANGTISE_QUOTE_DOMAIN + "/fund-flow/daily"
+FUND_FLOW_SECTOR_DAILY_URL = GANGTISE_QUOTE_DOMAIN + "/fund-flow/sector-daily"
 QUOTE_INDEX_DAILY_URL = GANGTISE_QUOTE_DOMAIN + "/index/kline/daily"
 QUOTE_HK_URL = GANGTISE_QUOTE_DOMAIN + "/kline-hk/daily"
 QUOTE_US_DAILY_URL = GANGTISE_QUOTE_DOMAIN + "/kline-us/daily"
@@ -196,6 +197,27 @@ def add_usages(usages_list: List[Dict[str, Any]]):
                 usages[k] = usages[k] + v
     return usages
 
+def _unique_result_path(process_dir: str, module_name: str, extension: str) -> str:
+    """日期、微秒和随机后缀独占创建，避免只靠时分秒重名。"""
+    os.makedirs(process_dir, exist_ok=True)
+    ext = (extension or "dat").lstrip(".") or "dat"
+    stem = module_name or "result"
+    for _ in range(8):
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        suffix = uuid.uuid4().hex[:8]
+        path = os.path.join(process_dir, f"{stem}_{stamp}_{suffix}.{ext}")
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            continue
+        except OSError:
+            continue
+        else:
+            os.close(fd)
+            return path
+    raise RuntimeError("结果文件无法写入，请稍后重试")
+
+
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None):
     should_save = bool(output_dir) or GTS_SAVE_FILE
 
@@ -249,17 +271,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
                     process_dir = output_dir
                 else:
                     process_dir = os.path.join(gangtise_workspace_path, method_name)
-                _ensure_dir(process_dir)
-                now = datetime.datetime.now().strftime("%H%M%S")
-                process_path = os.path.join(process_dir, f"{module_name}_{now}.{extension}")
-                max_retries = 10
-                while os.path.exists(process_path) and max_retries > 0:
-                    time.sleep(1)
-                    now = datetime.datetime.now().strftime("%H%M%S")
-                    process_path = os.path.join(process_dir, f"{module_name}_{now}.{extension}")
-                    max_retries -= 1
-                if max_retries == 0:
-                    raise RuntimeError("文件存储系统繁忙，请稍后再试")
+                process_path = _unique_result_path(process_dir, module_name, extension)
             if item["type"] == "data":
                 data = pd.DataFrame(data)
                 if process_path:
@@ -1912,6 +1924,29 @@ FUND_FLOW_CN ={
     "mainNetInflow": "主力净流入（单位：元）",
     "mainInflowRatio": "主力流入占总流入比例（%）",
     "mainOutflowRatio": "主力流出占总流出比例（%）",
+}
+
+# 板块资金流向字段；金额单位均为元，口径为板块内沪深北成分股加总。
+SECTOR_FUND_FLOW_CN = {
+    "sectorId": "板块ID",
+    "tradeDate": "交易日期",
+    "sectorSmallInflow": "板块小单流入金额（单位：元）",
+    "sectorSmallOutflow": "板块小单流出金额（单位：元）",
+    "sectorSmallNetInflow": "板块小单净流入金额（单位：元）",
+    "sectorMediumInflow": "板块中单流入金额（单位：元）",
+    "sectorMediumOutflow": "板块中单流出金额（单位：元）",
+    "sectorMediumNetInflow": "板块中单净流入金额（单位：元）",
+    "sectorLargeInflow": "板块大单流入金额（单位：元）",
+    "sectorLargeOutflow": "板块大单流出金额（单位：元）",
+    "sectorLargeNetInflow": "板块大单净流入金额（单位：元）",
+    "sectorXlargeInflow": "板块特大单流入金额（单位：元）",
+    "sectorXlargeOutflow": "板块特大单流出金额（单位：元）",
+    "sectorXlargeNetInflow": "板块特大单净流入金额（单位：元）",
+    "sectorMainInflow": "板块主力流入金额（单位：元）",
+    "sectorMainOutflow": "板块主力流出金额（单位：元）",
+    "sectorMainNetInflow": "板块主力净流入（单位：元）",
+    "sectorTotalInflow": "板块全单流入金额（单位：元）",
+    "sectorTotalOutflow": "板块全单流出金额（单位：元）",
 }
 
 OPENAPI_SKILL_VERSION = "1.7.0"

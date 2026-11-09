@@ -24,8 +24,8 @@
 | `--rating-change-list` | 否 | 评级变动：`upgrade` / `maintain` / `downgrade` / `initiate`。 |
 | `--min-report-pages` | 否 | 研报最小页数。 |
 | `--max-report-pages` | 否 | 研报最大页数。 |
-| `--search-type` | 否 | `1` 标题搜索，`2` 全文搜索（默认 `1`）。 |
-| `--rank-type` | 否 | `1` 综合排序，`2` 时间倒序（默认 `1`）。 |
+| `--search-type` | 否 | `1` 标题搜索（默认），`2` 全文搜索。标题无结果时会自动尝试全文。 |
+| `--rank-type` | 否 | `1` 综合排序（默认），`2` 时间倒序。 |
 | `-d` / `--download` | 否 | 是否在检索后自动下载对应外资研报文件，默认不下载。 |
 | `-od` / `--output-dir` | 否 | 结果与下载文件保存目录路径，建议绝对路径；默认在 gangtise 工作目录下 `foreign_report`。 |
 | `-dt` / `--download-types` | 否 | 下载类型，逗号分隔：`pdf`、`markdown`。 |
@@ -42,6 +42,12 @@
 
 ```bash
 python3 scripts/foreign_report.py -k 自动驾驶 -sd 2026-01-01 -ed 2026-05-31 -l 20
+```
+
+**全文检索：**
+
+```bash
+python3 scripts/foreign_report.py -k 自动驾驶 --search-type 2 -sd 2026-01-01 -ed 2026-05-31 -l 20
 ```
 
 **类别 + 券商 + 语义标签：**

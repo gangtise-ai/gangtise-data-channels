@@ -1,8 +1,9 @@
 {
-  "summary": "读取 Gangtise 终端个人私有数据：自选股池、微信群消息、我的会议、录音速记、AI 云盘等，结果可落盘 CSV/Markdown。",
+  "summary": "读取 Gangtise 终端个人私有数据：个人自选股与所属租户股票池、微信群消息、我的会议、录音速记、AI 云盘等，结果可落盘 CSV/Markdown。",
   "installation_instructions": "通过 https://gts-download.obs.cn-east-3.myhuaweicloud.com/skills/gangtise-private.zip 下载解压，并复制到 skills/ 目录下；需配置 GTS_ACCESS_KEY / GTS_SECRET_KEY。",
   "keywords": [
     "自选股池",
+    "租户股票池",
     "微信群消息",
     "我的会议",
     "录音速记",
@@ -13,6 +14,7 @@
   "example_prompts": [
     "我终端里「自选股1」这个池子有哪些票？",
     "我名下所有自选股池列一下，我想核对有没有漏加。",
+    "所属租户里我能看的股票池有哪些，把交易池里的股票导出来。",
     "指定几个股票池里的成分股名单导出来。",
     "AI学习群里上个月聊半导体的消息帮我翻一下。",
     "我常用的几个微信群分别是哪几个，群名对一下。",

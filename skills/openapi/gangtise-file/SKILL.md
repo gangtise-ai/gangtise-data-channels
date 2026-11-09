@@ -42,18 +42,26 @@ metadata:
 
 所有脚本都具有`-sd`和`-ed`参数，使用时注意今天的年份和日期！
 
+**搜索类型（`--search-type`）**：内资研报、外资研报、会议纪要、帕米尔专家纪要、公众号资讯、公司公告均支持两种关键词检索方式——`1` 标题搜索（默认）、`2` 全文搜索。用户明确要在正文中找词（如“搜全文”“正文里有…”）时用 `--search-type 2`；默认标题检索即可。标题无结果时多数脚本会自动再试全文。
+
 整体长度是可控的，调用时请不要使用 `| head -N`，输出文件地址一般在末尾。
 
 调用对应脚本前，请先查看对应脚本的调用指导文档，了解更多参数的含义和使用方法。
 
 ### 1. 从研究报告检索
 
-按关键词、证券、日期、券商、行业、研报类别、语义标签、评级/评级变动、页数范围、来源类型等条件检索研究报告。
+按关键词、证券、日期、券商、行业、研报类别、语义标签、评级/评级变动、页数范围、来源类型等条件检索研究报告。支持 `--search-type`：`1` 标题（默认）/ `2` 全文。
 
 示例（证券"比亚迪"，限定时间范围与数量）：
 
 ```bash
 python3 scripts/report.py --securities 比亚迪 -sd 2026-01-01 -ed 2026-12-31 -l 20
+```
+
+示例（关键词全文检索）：
+
+```bash
+python3 scripts/report.py -k 固态电池 --search-type 2 -sd 2026-01-01 -ed 2026-12-31 -l 20
 ```
 
 行业、机构枚举值可通过 `scripts/get_industries.py`、`scripts/get_institutions.py` 获取。详见 [研究报告调用指导](./references/report.md)。
@@ -74,12 +82,18 @@ python3 scripts/report_image.py -k 算力 --source-id 297236012319510528 -d true
 
 ### 2. 外资研报检索
 
-按关键词、证券、日期、券商、行业、区域、研报类别、语义标签、评级/评级变动、页数范围等条件检索外资研报列表。境外证券代码格式如 `UBER.N`。
+按关键词、证券、日期、券商、行业、区域、研报类别、语义标签、评级/评级变动、页数范围等条件检索外资研报列表。境外证券代码格式如 `UBER.N`。支持 `--search-type`：`1` 标题（默认）/ `2` 全文。
 
 示例（关键词 + 时间范围）：
 
 ```bash
 python3 scripts/foreign_report.py -k 自动驾驶 -sd 2026-01-01 -ed 2026-05-31 -l 20
+```
+
+示例（全文检索）：
+
+```bash
+python3 scripts/foreign_report.py -k 自动驾驶 --search-type 2 -sd 2026-01-01 -ed 2026-05-31 -l 20
 ```
 
 行业、券商、区域枚举值可通过 `scripts/get_industries.py`、`scripts/get_institutions.py`、`scripts/get_regions.py` 获取。详见 [外资研报调用指导](./references/foreign_report.md)。
@@ -128,7 +142,7 @@ python3 scripts/foreign_opinion.py --source independent -k 肿瘤 -sd 2026-01-01
 
 ### 5. 从会议纪要检索
 
-按关键词、证券、机构、行业、来源类型、会议类别/市场/参会人角色等条件检索会议纪要。
+按关键词、证券、机构、行业、来源类型、会议类别/市场/参会人角色等条件检索会议纪要。支持 `--search-type`：`1` 标题（默认）/ `2` 全文。
 
 示例（关键词 + 会议类别）：
 
@@ -136,11 +150,17 @@ python3 scripts/foreign_opinion.py --source independent -k 肿瘤 -sd 2026-01-01
 python3 scripts/summary.py -k 锂电 --category-list earningsCall -l 20
 ```
 
+示例（全文检索）：
+
+```bash
+python3 scripts/summary.py -k 锂电 --search-type 2 --category-list earningsCall -l 20
+```
+
 行业、机构枚举值可通过 `scripts/get_industries.py`、`scripts/get_institutions.py` 获取。详见 [会议纪要调用指导](./references/summary.md)。
 
 ### 5.1 帕米尔专家纪要检索
 
-专用于检索帕米尔牵头机构下的专家纪要；支持关键词、证券、研究方向、纪要类别（公司分析/行业分析）、市场、排序与下载（原始文件或 HTML）。需已购买专家纪要数据库权限。
+专用于检索帕米尔牵头机构下的专家纪要；支持关键词、证券、研究方向、纪要类别（公司分析/行业分析）、市场、排序与下载（原始文件或 HTML）。支持 `--search-type`：`1` 标题（默认）/ `2` 全文。需已购买专家纪要数据库权限。
 
 示例（关键词 + 时间倒序）：
 
@@ -148,14 +168,24 @@ python3 scripts/summary.py -k 锂电 --category-list earningsCall -l 20
 python3 scripts/pamirs_summary.py -k AI智能体 --rank-type 2 -l 20
 ```
 
+示例（全文检索）：
+
+```bash
+python3 scripts/pamirs_summary.py -k AI智能体 --search-type 2 --rank-type 2 -l 20
+```
+
 研究方向枚举可通过 `scripts/get_industries.py` 获取。详见 [帕米尔专家纪要调用指导](./references/pamirs_summary.md)。
 
 ### 6. 公众号资讯检索
 
-按关键词、证券、公众号（ID 或名称）、文章类型、行业、时间等条件检索资讯订阅平台消息列表；支持 `-d` 下载 txt/HTML 正文。`--accounts` 传名称时会自动解析 ID，多匹配时返回候选提醒。
+按关键词、证券、公众号（ID 或名称）、文章类型、行业、时间等条件检索资讯订阅平台消息列表；支持 `-d` 下载 txt/HTML 正文。支持 `--search-type`：`1` 标题（默认）/ `2` 全文。`--accounts` 传名称时会自动解析 ID，多匹配时返回候选提醒。
 
 ```bash
 python3 scripts/official_account.py -k 泡泡玛特 -sd 2026-01-01 -ed 2026-04-30 -l 20
+```
+
+```bash
+python3 scripts/official_account.py -k 泡泡玛特 --search-type 2 -sd 2026-01-01 -ed 2026-04-30 -l 20
 ```
 
 ```bash
@@ -170,12 +200,18 @@ python3 scripts/official_account.py -k 机器人 --category-list news,report -d 
 
 ### 7. 从公司公告检索
 
-按证券、关键词、日期等条件检索公司公告（支持 A 股、港股、美股）。
+按证券、关键词、日期等条件检索公司公告（支持 A 股、港股、美股）。支持 `--search-type`：`1` 标题（默认）/ `2` 全文。
 
 示例（证券 + 关键词 + 时间；证券可写代码或名称）：
 
 ```bash
 python3 scripts/announcement.py --securities 五粮液 -k 业绩 -sd 2026-01-01 -ed 2026-12-31
+```
+
+示例（全文检索）：
+
+```bash
+python3 scripts/announcement.py --securities 五粮液 -k 业绩 --search-type 2 -sd 2026-01-01 -ed 2026-12-31
 ```
 
 详见 [公司公告调用指导](./references/announcement.md)。
@@ -210,10 +246,16 @@ python3 scripts/qa.py -s 601012.SH -sd 2026-05-01 -ed 2026-06-16 -l 5
 
 ### 9. 投研日程（路演 / 调研 / 线下策略会 / 论坛 / 财报日历）
 
-示例（路演 + 关键词 + 时间）：
+示例（路演 + 关键词 + 举办时间）：
 
 ```bash
 python3 scripts/investment_calendar.py -t roadshow -k 策略会 -sd 2026-01-01 -ed 2026-05-31 -l 20
+```
+
+路演、调研、线下策略会、论坛还可按收录时间过滤（`publishStartTime` / `publishEndTime`），与举办时间是「与」关系。返回的 `收录时间` 是该条信息首次被收录的时间（东八区），用于增量同步：
+
+```bash
+python3 scripts/investment_calendar.py -t roadshow --publish-start-date 2026-03-01 --publish-end-date 2026-03-31 -l 20
 ```
 
 财报日历示例（业绩公告 + 日期；结果区分「已发布可下载」与「尚未发布预告」）：

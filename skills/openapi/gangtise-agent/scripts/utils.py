@@ -15,7 +15,7 @@ from typing import Dict, List, Any, Optional
 # from logging.handlers import TimedRotatingFileHandler
 import pandas as pd
 import datetime
-import time
+import uuid
 import json
 import requests
 
@@ -230,6 +230,27 @@ def _write_agent_row(f, row: Dict[str, Any], agent_type: str, method_name: str) 
     elif row.get("markdown"):
         f.write(row["markdown"].strip() + "\n")
 
+def _unique_result_path(process_dir: str, module_name: str, extension: str) -> str:
+    """日期、微秒和随机后缀独占创建，避免只靠时分秒重名。"""
+    os.makedirs(process_dir, exist_ok=True)
+    ext = (extension or "dat").lstrip(".") or "dat"
+    stem = module_name or "result"
+    for _ in range(8):
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        suffix = uuid.uuid4().hex[:8]
+        path = os.path.join(process_dir, f"{stem}_{stamp}_{suffix}.{ext}")
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            continue
+        except OSError:
+            continue
+        else:
+            os.close(fd)
+            return path
+    raise RuntimeError("结果文件无法写入，请稍后重试")
+
+
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None, additional_message: str = ""):
     # 保存 usage
     today = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -268,17 +289,10 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
                 process_dir = output_dir
             else:
                 process_dir = os.path.join(gangtise_workspace_path, method_name)
-            os.makedirs(process_dir, exist_ok=True)
-            now = datetime.datetime.now().strftime("%H%M%S")
-            process_path = os.path.join(process_dir, f"{module_name}_{now}.{extension}")
-            max_retries = 10
-            while os.path.exists(process_path) and max_retries > 0:
-                time.sleep(1)
-                now = datetime.datetime.now().strftime("%H%M%S")
-                process_path = os.path.join(process_dir, f"{module_name}_{now}.{extension}")
-                max_retries -= 1
-            if max_retries == 0:
-                return "错误信息：文件存储系统繁忙，请稍后再试"
+            try:
+                process_path = _unique_result_path(process_dir, module_name, extension)
+            except RuntimeError as exc:
+                return f"错误信息：{exc}"
 
             if GTS_SAVE_EXTENSION == "json":
                 with open(process_path, "w", encoding="utf-8") as f:

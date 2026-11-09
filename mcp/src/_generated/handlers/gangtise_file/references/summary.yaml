@@ -53,6 +53,9 @@ parameters:
     description: 兼容参数：旧版栏目列表（A股/港股/美股中概/美股/高管/专家/业绩会/策略会/公司分析/行业分析/基金路演），会映射到 market_list/participant_role_list/category_list
     items:
       type: string
+  search_type:
+    type: integer
+    description: 搜索类型：1 标题搜索（默认），2 全文搜索；标题无结果时会自动尝试全文
   limit:
     type: integer
     description: 返回条数上限

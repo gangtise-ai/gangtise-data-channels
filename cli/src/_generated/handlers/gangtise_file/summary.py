@@ -348,6 +348,7 @@ def summary_finder(
     participant_role_list: Optional[List[str]] = None,
     category_list: Optional[List[str]] = None,
     columns: Optional[List[str]] = None,
+    search_type: int = 1,
     limit: Optional[int] = None,
     download: bool = False,
     output_dir: Optional[str] = None,
@@ -455,13 +456,13 @@ def summary_finder(
             payload_base["participantRoleList"] = resolved_participant_role_list
 
         part_error_message = ""
-        all_results, err = _fetch_summaries(headers, payload_base, keyword_str, 1, limit)
+        all_results, err = _fetch_summaries(headers, payload_base, keyword_str, search_type, limit)
         if err and not all_results:
             return format_response({"state": "error", "message": err}, "summary", output_dir=output_dir)
         elif err and all_results:
             part_error_message = f"未完整获取全部结果，错误信息：{err}"
 
-        if not all_results and keyword_str:
+        if not all_results and keyword_str and search_type != 2:
             all_results, err = _fetch_summaries(headers, payload_base, keyword_str, 2, limit)
             if err and not all_results:
                 return format_response({"state": "error", "message": err}, "summary", output_dir=output_dir)
@@ -562,6 +563,12 @@ def main():
         help="【兼容参数】旧版栏目列表，逗号分隔（A股/港股/美股中概/美股/高管/专家/业绩会/策略会/公司分析/行业分析/基金路演）。该参数将被映射到 categoryList/marketList/participantRoleList，不再发送 columnIdList。",
     )
     parser.add_argument(
+        "--search-type",
+        default=1,
+        type=int,
+        help="搜索类型：1-标题搜索 2-全文搜索",
+    )
+    parser.add_argument(
         "-d",
         "--download",
         default=DOWNLOAD_DEFAULT,
@@ -590,6 +597,7 @@ def main():
     participant_role_list = _parse_str_list(args.participant_role_list)
     start_date = args.start_date or None
     end_date = args.end_date or None
+    search_type = int(args.search_type or 1)
     limit = resolve_result_limit(args.limit, bool(args.download), "summary")
     download = args.download or False
     output_dir = args.output_dir or None
@@ -612,6 +620,7 @@ def main():
         market_list=market_list,
         participant_role_list=participant_role_list,
         columns=columns,
+        search_type=search_type,
         limit=limit,
         download=download,
         output_dir=output_dir,

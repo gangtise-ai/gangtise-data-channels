@@ -9,7 +9,12 @@ from gangtise_core.endpoints import (
 def test_destructive_roster_is_exact():
     eps = load_endpoints()
     destructive = sorted(k for k, e in eps.items() if e.destructive)
-    assert destructive == ["vault.drive.delete-file", "vault.drive.delete-folder", "vault.stock-pool.delete"]
+    assert destructive == [
+        "vault.drive.delete-file",
+        "vault.drive.delete-folder",
+        "vault.stock-pool.delete",
+        "vault.stock-pool.delete-note",
+    ]
 
 
 def test_stockpool_search_does_not_require_yes():
@@ -17,15 +22,24 @@ def test_stockpool_search_does_not_require_yes():
     dest = destructive_for_tool("vault.stock-pool.delete")
     assert dest is not None
     assert "--yes" in dest.warning
+    note_dest = destructive_for_tool("vault.stock-pool.delete-note")
+    assert note_dest is not None
+    assert "--yes" in note_dest.warning
 
 
 def test_destructive_is_resolved_per_mode():
-    for tool, mode in [("stockpool", "delete"), ("private_cloud", "delete_file"), ("private_cloud", "delete_folder")]:
+    for tool, mode in [
+        ("stockpool", "delete"),
+        ("stockpool", "delete_note"),
+        ("private_cloud", "delete_file"),
+        ("private_cloud", "delete_folder"),
+    ]:
         dest = destructive_for_tool(tool, mode)
         assert dest is not None and "--yes" in dest.warning, (tool, mode)
     for tool, mode in [
         ("stockpool", "search"),
         ("stockpool", "delete_stock"),
+        ("stockpool", "search_note"),
         ("private_cloud", "search"),
         ("private_cloud", "move_file"),
         ("private_cloud", None),

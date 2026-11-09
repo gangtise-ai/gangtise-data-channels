@@ -50,6 +50,12 @@ quote.fund-flow:
   expects: table
   timeout_s: 300
   tool: fund_flow
+quote.fund-flow-sector:
+  method: POST
+  path: /fund-flow/sector-daily
+  expects: table
+  timeout_s: 300
+  tool: fund_flow
 
 fundamental.earning-forecast:
   method: POST
@@ -294,6 +300,31 @@ vault.stock-pool.delete:
   mode: delete
   destructive:
     warning: 删除股票池会同时移除池内全部证券的关注关系，且不可恢复（投资笔记不受影响）；先用 stockpool search 核对 ID 对应的池名，经用户确认后加 --yes 重试。
+vault.stock-pool.notes:
+  method: POST
+  path: /stock-pool/getNoteList
+  tool: stockpool
+  mode: search_note
+vault.stock-pool.add-note:
+  method: POST
+  path: /stock-pool/addNote
+  retry: no-replay
+  tool: stockpool
+  mode: add_note
+vault.stock-pool.update-note:
+  method: POST
+  path: /stock-pool/updateNote
+  tool: stockpool
+  mode: update_note
+vault.stock-pool.delete-note:
+  method: POST
+  path: /stock-pool/deleteNote
+  retry: no-replay
+  item_failures: true
+  tool: stockpool
+  mode: delete_note
+  destructive:
+    warning: 删除个股笔记不可恢复；先用 search_note 核对 stockNoteId 对应内容，经用户确认后加 --yes（MCP 传 confirm=true）重试。
 vault.conference.download:
   method: GET
   path: /my-conference/download/file

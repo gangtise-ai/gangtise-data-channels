@@ -21,7 +21,7 @@
 | `--account-category-list` | 否 | 解析 `--accounts` 名称时的**公众号分类**筛选，见下表；不传则含未分类公众号。 |
 | `--category-list` | 否 | **文章类型**，英文 code 或中文，如 `news,report` 或 `新闻资讯,报告类`。 |
 | `--industries` | 否 | 行业名称，逗号分隔。 |
-| `--search-type` | 否 | `1` 标题搜索（默认），`2` 全文搜索。 |
+| `--search-type` | 否 | `1` 标题搜索（默认），`2` 全文搜索。标题无结果时会自动尝试全文。 |
 | `--rank-type` | 否 | `1` 综合排序（默认），`2` 时间倒序。 |
 | `-d` / `--download` | 否 | 检索后自动下载正文。 |
 | `-od` / `--output-dir` | 否 | 结果与下载文件保存目录路径，建议绝对路径。 |
@@ -46,6 +46,12 @@
 
 ```bash
 python3 scripts/official_account.py -k 泡泡玛特 -sd 2026-01-01 -ed 2026-04-30 -l 20
+```
+
+全文检索：
+
+```bash
+python3 scripts/official_account.py -k 泡泡玛特 --search-type 2 -sd 2026-01-01 -ed 2026-04-30 -l 20
 ```
 
 按公众号名称筛选（自动解析 ID）：

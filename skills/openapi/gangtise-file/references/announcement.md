@@ -15,8 +15,8 @@
 | `-sd` / `--start-date` | 否 | 开始日期，如 `2026-01-01`。 |
 | `-ed` / `--end-date` | 否 | 结束日期，如 `2026-12-31`。 |
 | `--category-list` | 否 | 公告分类列表，逗号分隔（可通过 `scripts/get_announcement_types.py` 查看可选值）。 |
-| `--search-type` | 否 | 搜索类型：1-标题搜索 2-全文搜索。 |
-| `--rank-type` | 否 | 排序方式：1-综合排序 2-时间倒序。 |
+| `--search-type` | 否 | 搜索类型：`1` 标题搜索（默认），`2` 全文搜索。标题无结果时会自动尝试全文。 |
+| `--rank-type` | 否 | 排序方式：`1` 综合排序（默认），`2` 时间倒序。 |
 | `-l` / `--limit` | 否 | 返回数量上限。 |
 | `-d` / `--download` | 否 | 是否在检索后自动下载所有对应公司公告文件，默认不下载。 |
 | `-od` / `--output-dir` | 否 | 结果与下载文件保存目录路径，建议使用绝对路径。默认保存在 gangtise 工作目录下的 `announcements` 目录。 |
@@ -29,6 +29,11 @@
 **按证券 + 关键词 + 时间：**
 ```bash
 python3 scripts/announcement.py --securities 五粮液 -k 业绩 -sd 2026-01-01 -ed 2026-12-31
+```
+
+**全文检索：**
+```bash
+python3 scripts/announcement.py --securities 五粮液 -k 业绩 --search-type 2 -sd 2026-01-01 -ed 2026-12-31
 ```
 
 **按关键词：**

@@ -40,12 +40,15 @@ Point the client at `http://127.0.0.1:8000/` with `accessKey` / `secretKey`, or 
 | `MCP_TRANSPORT` | `http` | `http` / `sse` / `both` |
 | `MCP_PATH` | `/` | In-process MCP mount |
 | `SUBPATHS` | empty | Comma-separated source prefixes. `doubao,ali` makes `/open-mcp/doubao/` hit the same server as `/open-mcp/` |
+| `SUBPATHS_MODE` | empty | Per-subpath exposure, e.g. `doubao:leaf;progressive:progressive`. Unlisted subpaths default to leaf; main path still uses `MCP_TOOL_EXPOSURE` |
+| `MCP_PROGRESSIVE_SUBPATH` | empty | Compat shorthand: add that name to `SUBPATHS` and mark it progressive (same as `{name}:progressive` in `SUBPATHS_MODE`) |
 | `MCP_REQUIRE_AUTH` | `true` | HTTP 401 when the MCP path has neither Authorization nor AK/SK |
-| `MCP_TOOL_BLACKLIST` | empty | Comma-separated skill names (`gangtise-web`) or tool names (`fund_nav`) |
+| `MCP_TOOL_BLACKLIST` | empty | Tool/skill blacklist. Main segment applies to every entry; append per subpath with `;subpath:names`. Example: `A,B;doubao:C;progressive:D,E` → main blocks A,B; doubao blocks A,B,C; progressive blocks A,B,D,E |
 | `MCP_HOST` / `MCP_PORT` | `0.0.0.0` / `8000` | Bind address |
 | `GTS_JWT_SECRET` | empty | Enables the local OAuth authorization server. Without it, `/oauth/*` returns 503; AK/SK and Authorization still work |
 | `GTS_OAUTH_RESOURCE` | empty (this service) | OAuth `resource` base URL |
-| `GTS_OAUTH_ISSUER` | empty (this service) | Issuer advertised in `authorization_servers`. When using an external AS, it must match that AS metadata `issuer` |
+| `GTS_OAUTH_ISSUER` | empty (this service) | Public issuer in `authorization_servers` and browser authorize redirects. When using an external AS, it must match that AS metadata `issuer` |
+| `GTS_OAUTH_UPSTREAM` | `https://auth.gangtise.com` | Upstream base for proxying `/oauth/*` and `/.well-known/openid-configuration` under the MCP path when using an external AS. In-cluster example: `http://workbuddy-connector-server.platform-business:15684` |
 | `GTS_OAUTH_SCOPES` | `mcp` | `scopes_supported` on the protected-resource metadata. Match the external AS, e.g. `mcp.read mcp.write` |
 | `GTS_ACCESS_KEY` / `GTS_SECRET_KEY` | empty | Process-level AK/SK. Remote clients usually send headers per request instead |
 | `OBS_*` | empty | Optional attachment offload: `OBS_ACCESS_KEY` / `OBS_SECRET_KEY` / `OBS_ENDPOINT` / `OBS_BUCKET` / `OBS_PATH` |

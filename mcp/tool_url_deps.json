@@ -1,12 +1,11 @@
 {
   "version": 2,
-  "mcp_root": "/Users/yanxiao/Documents/code/skills-backend/mcps/mcp",
+  "mcp_root": "/Users/yanxiao/Documents/code/gangtise-data-channels/mcp",
   "tools": {
     "earnings_review": [],
-    "hot_topic": [
-      "/hot-topic/getList"
-    ],
+    "hot_topic": [],
     "investment_logic": [],
+    "management_sentiment": [],
     "peer_comparison": [],
     "research_outline": [],
     "security_clue": [],
@@ -14,20 +13,23 @@
     "stock_one_pager": [],
     "theme_tracking": [],
     "viewpoint_debate": [],
-    "block_constituents": [
-      "/sectors/constituents",
-      "/sectors/search"
+    "announcement": [
+      "/announcement-hk/getList",
+      "/announcement-us/getList",
+      "/announcement/getList",
+      "/bond/announcement"
     ],
-    "company_indicator": [
-      "/EDE/search",
-      "/EDE/time-series"
+    "basic_info": [
+      "/bond/basic-info"
     ],
-    "concept": [
-      "/concept/info",
-      "/concept/securities"
+    "cash_flow": [
+      "/bond/cash-flow"
     ],
-    "earning_forecast": [
-      "/earning-forecast"
+    "default_list": [
+      "/bond/default-list"
+    ],
+    "exercise_notice": [
+      "/bond/exercise-notice"
     ],
     "financial": [
       "/financial-report/balance-sheet/accumulated",
@@ -42,8 +44,64 @@
       "/financial-report/income-statement/quarterly",
       "/financial-report/income-statement/us"
     ],
+    "indicator": [
+      "/EDE/cross-section",
+      "/EDE/search",
+      "/EDE/time-series"
+    ],
+    "issuance": [
+      "/bond/issuance-detail"
+    ],
+    "issuance_plan": [
+      "/bond/issuance-plan"
+    ],
+    "issuer_info": [
+      "/bond/issuer-info"
+    ],
+    "issuer_rating_change": [
+      "/bond/issuer-rating-change"
+    ],
+    "quote": [
+      "/adjustFactor",
+      "/bond/daily-quote-exchange-cfets",
+      "/kline/daily",
+      "/kline/minute",
+      "/quote/realtime"
+    ],
+    "rating": [
+      "/bond/rating-overview"
+    ],
+    "rating_change": [
+      "/bond/rating-change"
+    ],
+    "security": [
+      "/bond/issuer-info",
+      "/securities/search"
+    ],
+    "valuation": [
+      "/bond/valuation-shclearing",
+      "/valuation-analysis"
+    ],
+    "block_constituents": [
+      "/sectors/constituents",
+      "/sectors/search"
+    ],
+    "company_indicator": [
+      "/EDE/cross-section",
+      "/EDE/search",
+      "/EDE/time-series"
+    ],
+    "concept": [
+      "/concept/v2/info",
+      "/concept/v2/securities"
+    ],
+    "earning_forecast": [
+      "/earning-forecast"
+    ],
     "fund_flow": [
-      "/fund-flow/daily"
+      "/fund-flow/daily",
+      "/fund-flow/sector-daily",
+      "/sectors/search"
     ],
     "industry_indicator": [
       "/EDB/getData",
@@ -52,29 +110,11 @@
     "main_business": [
       "/main-business"
     ],
-    "quote": [
-      "/adjustFactor",
-      "/kline/daily",
-      "/kline/minute",
-      "/quote/realtime"
-    ],
-    "security": [
-      "/securities/search"
-    ],
     "shareholder": [
       "/capital-structure/top-holders"
     ],
-    "valuation": [
-      "/valuation-analysis"
-    ],
-    "announcement": [
-      "/announcement-hk/getList",
-      "/announcement-us/getList",
-      "/announcement/getList"
-    ],
     "foreign_opinion": [
-      "/foreign-opinion/getDetail",
-      "/foreign-opinion/getList",
+      "/foreign-opinion/v2/getList",
       "/independent-opinion/getList"
     ],
     "foreign_report": [
@@ -115,8 +155,7 @@
       "/officialAccount/getList"
     ],
     "opinion": [
-      "/chief-opinion/getDetail",
-      "/chief-opinion/getList"
+      "/chief-opinion/v2/getList"
     ],
     "pamirs_summary": [
       "/pamirs-summary/getList"
@@ -134,12 +173,62 @@
     "summary": [
       "/summary/v2/getList"
     ],
+    "allocation": [
+      "/fund/asset-allocation",
+      "/fund/bond-type-allocation",
+      "/fund/fund-type-allocation",
+      "/fund/industry-allocation"
+    ],
+    "asset_size": [
+      "/fund/asset-size"
+    ],
+    "etf_components": [
+      "/fund/etf-pcf-components"
+    ],
+    "etf_header": [
+      "/fund/etf-pcf-header"
+    ],
+    "etf_share": [
+      "/fund/etf-share-change"
+    ],
+    "holder_structure": [
+      "/fund/holder-structure"
+    ],
+    "manager": [
+      "/fund/manager-info"
+    ],
+    "nav": [
+      "/fund/nav"
+    ],
+    "portfolio": [
+      "/fund/bond-portfolio",
+      "/fund/fund-portfolio",
+      "/fund/stock-portfolio"
+    ],
+    "profile": [
+      "/fund/basic-info",
+      "/fund/fee-rate",
+      "/fund/manager-history"
+    ],
+    "top_holders": [
+      "/fund/top10-holders"
+    ],
     "kb": [
       "/ai/search/knowledge_base"
     ],
+    "pdf_parse": [],
     "private_cloud": [
+      "/drive/copy",
+      "/drive/createFolder",
+      "/drive/deleteFile",
+      "/drive/deleteFolder",
       "/drive/download/file",
-      "/drive/getList"
+      "/drive/getFolderList",
+      "/drive/getList",
+      "/drive/moveFile",
+      "/drive/moveFolder",
+      "/drive/rename",
+      "/drive/uploadFile"
     ],
     "private_meeting": [
       "/my-conference/download/file",
@@ -150,22 +239,33 @@
       "/record/getList"
     ],
     "stockpool": [
+      "/stock-pool/addNote",
+      "/stock-pool/addStock",
+      "/stock-pool/createPool",
+      "/stock-pool/deleteNote",
+      "/stock-pool/deletePool",
+      "/stock-pool/deleteStock",
+      "/stock-pool/getNoteList",
       "/stock-pool/getPoolList",
-      "/stock-pool/getStockList"
+      "/stock-pool/getStockList",
+      "/stock-pool/updateNote",
+      "/stock-pool/updatePool"
     ],
     "wechat_message": [
       "/wechatgroupmsg/chatroomId",
       "/wechatgroupmsg/list"
     ],
-    "pdf_parse": []
+    "screener": [],
+    "web_search": [
+      "/web-search/search"
+    ]
   },
   "by_package": {
     "gangtise_agent": {
       "earnings_review": [],
-      "hot_topic": [
-        "/hot-topic/getList"
-      ],
+      "hot_topic": [],
       "investment_logic": [],
+      "management_sentiment": [],
       "peer_comparison": [],
       "research_outline": [],
       "security_clue": [],
@@ -174,18 +274,82 @@
       "theme_tracking": [],
       "viewpoint_debate": []
     },
+    "gangtise_bond": {
+      "announcement": [
+        "/bond/announcement"
+      ],
+      "basic_info": [
+        "/bond/basic-info"
+      ],
+      "cash_flow": [
+        "/bond/cash-flow"
+      ],
+      "default_list": [
+        "/bond/default-list"
+      ],
+      "exercise_notice": [
+        "/bond/exercise-notice"
+      ],
+      "financial": [
+        "/financial-report/balance-sheet/accumulated",
+        "/financial-report/balance-sheet/hk",
+        "/financial-report/balance-sheet/us",
+        "/financial-report/cash-flow-statement/accumulated",
+        "/financial-report/cash-flow-statement/hk",
+        "/financial-report/cash-flow-statement/quarterly",
+        "/financial-report/cash-flow-statement/us",
+        "/financial-report/income-statement/accumulated",
+        "/financial-report/income-statement/hk",
+        "/financial-report/income-statement/quarterly",
+        "/financial-report/income-statement/us"
+      ],
+      "indicator": [
+        "/EDE/cross-section",
+        "/EDE/search",
+        "/EDE/time-series"
+      ],
+      "issuance": [
+        "/bond/issuance-detail"
+      ],
+      "issuance_plan": [
+        "/bond/issuance-plan"
+      ],
+      "issuer_info": [
+        "/bond/issuer-info"
+      ],
+      "issuer_rating_change": [
+        "/bond/issuer-rating-change"
+      ],
+      "quote": [
+        "/bond/daily-quote-exchange-cfets"
+      ],
+      "rating": [
+        "/bond/rating-overview"
+      ],
+      "rating_change": [
+        "/bond/rating-change"
+      ],
+      "security": [
+        "/bond/issuer-info",
+        "/securities/search"
+      ],
+      "valuation": [
+        "/bond/valuation-shclearing"
+      ]
+    },
     "gangtise_data": {
       "block_constituents": [
         "/sectors/constituents",
         "/sectors/search"
       ],
       "company_indicator": [
+        "/EDE/cross-section",
         "/EDE/search",
         "/EDE/time-series"
       ],
       "concept": [
-        "/concept/info",
-        "/concept/securities"
+        "/concept/v2/info",
+        "/concept/v2/securities"
       ],
       "earning_forecast": [
         "/earning-forecast"
@@ -204,7 +368,9 @@
         "/financial-report/income-statement/us"
       ],
       "fund_flow": [
-        "/fund-flow/daily"
+        "/fund-flow/daily",
+        "/fund-flow/sector-daily",
+        "/sectors/search"
       ],
       "industry_indicator": [
         "/EDB/getData",
@@ -236,8 +402,7 @@
         "/announcement/getList"
       ],
       "foreign_opinion": [
-        "/foreign-opinion/getDetail",
-        "/foreign-opinion/getList",
+        "/foreign-opinion/v2/getList",
         "/independent-opinion/getList"
       ],
       "foreign_report": [
@@ -278,8 +443,7 @@
         "/officialAccount/getList"
       ],
       "opinion": [
-        "/chief-opinion/getDetail",
-        "/chief-opinion/getList"
+        "/chief-opinion/v2/getList"
       ],
       "pamirs_summary": [
         "/pamirs-summary/getList"
@@ -298,15 +462,77 @@
         "/summary/v2/getList"
       ]
     },
+    "gangtise_fund": {
+      "allocation": [
+        "/fund/asset-allocation",
+        "/fund/bond-type-allocation",
+        "/fund/fund-type-allocation",
+        "/fund/industry-allocation"
+      ],
+      "asset_size": [
+        "/fund/asset-size"
+      ],
+      "etf_components": [
+        "/fund/etf-pcf-components"
+      ],
+      "etf_header": [
+        "/fund/etf-pcf-header"
+      ],
+      "etf_share": [
+        "/fund/etf-share-change"
+      ],
+      "holder_structure": [
+        "/fund/holder-structure"
+      ],
+      "indicator": [
+        "/EDE/cross-section",
+        "/EDE/search",
+        "/EDE/time-series"
+      ],
+      "manager": [
+        "/fund/manager-info"
+      ],
+      "nav": [
+        "/fund/nav"
+      ],
+      "portfolio": [
+        "/fund/bond-portfolio",
+        "/fund/fund-portfolio",
+        "/fund/stock-portfolio"
+      ],
+      "profile": [
+        "/fund/basic-info",
+        "/fund/fee-rate",
+        "/fund/manager-history"
+      ],
+      "security": [
+        "/securities/search"
+      ],
+      "top_holders": [
+        "/fund/top10-holders"
+      ]
+    },
     "gangtise_kb": {
       "kb": [
         "/ai/search/knowledge_base"
       ]
     },
+    "gangtise_pdf": {
+      "pdf_parse": []
+    },
     "gangtise_private": {
       "private_cloud": [
+        "/drive/copy",
+        "/drive/createFolder",
+        "/drive/deleteFile",
+        "/drive/deleteFolder",
         "/drive/download/file",
-        "/drive/getList"
+        "/drive/getFolderList",
+        "/drive/getList",
+        "/drive/moveFile",
+        "/drive/moveFolder",
+        "/drive/rename",
+        "/drive/uploadFile"
       ],
       "private_meeting": [
         "/my-conference/download/file",
@@ -317,21 +543,36 @@
         "/record/getList"
       ],
       "stockpool": [
+        "/stock-pool/addNote",
+        "/stock-pool/addStock",
+        "/stock-pool/createPool",
+        "/stock-pool/deleteNote",
+        "/stock-pool/deletePool",
+        "/stock-pool/deleteStock",
+        "/stock-pool/getNoteList",
         "/stock-pool/getPoolList",
-        "/stock-pool/getStockList"
+        "/stock-pool/getStockList",
+        "/stock-pool/updateNote",
+        "/stock-pool/updatePool"
       ],
       "wechat_message": [
         "/wechatgroupmsg/chatroomId",
         "/wechatgroupmsg/list"
       ]
     },
-    "gangtise_pdf": {
-      "pdf_parse": []
+    "gangtise_screener": {
+      "screener": []
+    },
+    "gangtise_web": {
+      "web_search": [
+        "/web-search/search"
+      ]
     }
   },
   "all_urls": [
     "/EDB/getData",
     "/EDB/search",
+    "/EDE/cross-section",
     "/EDE/search",
     "/EDE/time-series",
     "/Q&A-data/getList",
@@ -344,15 +585,37 @@
     "/announcement-us/getList",
     "/announcement/download/file",
     "/announcement/getList",
+    "/bond/announcement",
+    "/bond/basic-info",
+    "/bond/cash-flow",
+    "/bond/daily-quote-exchange-cfets",
+    "/bond/default-list",
+    "/bond/exercise-notice",
+    "/bond/issuance-detail",
+    "/bond/issuance-plan",
+    "/bond/issuer-info",
+    "/bond/issuer-rating-change",
+    "/bond/rating-change",
+    "/bond/rating-overview",
+    "/bond/valuation-shclearing",
     "/broker-report/download/file",
     "/broker-report/getList",
     "/capital-structure/top-holders",
     "/chief-opinion/getDetail",
-    "/chief-opinion/getList",
-    "/concept/info",
-    "/concept/securities",
+    "/chief-opinion/v2/getList",
+    "/concept/v2/info",
+    "/concept/v2/securities",
+    "/drive/copy",
+    "/drive/createFolder",
+    "/drive/deleteFile",
+    "/drive/deleteFolder",
     "/drive/download/file",
+    "/drive/getFolderList",
     "/drive/getList",
+    "/drive/moveFile",
+    "/drive/moveFolder",
+    "/drive/rename",
+    "/drive/uploadFile",
     "/earning-forecast",
     "/financial-report/balance-sheet/accumulated",
     "/financial-report/balance-sheet/hk",
@@ -366,11 +629,29 @@
     "/financial-report/income-statement/quarterly",
     "/financial-report/income-statement/us",
     "/foreign-opinion/getDetail",
-    "/foreign-opinion/getList",
+    "/foreign-opinion/v2/getList",
     "/foreign-report/download/file",
     "/foreign-report/getList",
     "/fund-flow/daily",
-    "/hot-topic/getList",
+    "/fund-flow/sector-daily",
+    "/fund/asset-allocation",
+    "/fund/asset-size",
+    "/fund/basic-info",
+    "/fund/bond-portfolio",
+    "/fund/bond-type-allocation",
+    "/fund/etf-pcf-components",
+    "/fund/etf-pcf-header",
+    "/fund/etf-share-change",
+    "/fund/fee-rate",
+    "/fund/fund-portfolio",
+    "/fund/fund-type-allocation",
+    "/fund/holder-structure",
+    "/fund/industry-allocation",
+    "/fund/manager-history",
+    "/fund/manager-info",
+    "/fund/nav",
+    "/fund/stock-portfolio",
+    "/fund/top10-holders",
     "/independent-opinion/download/file",
     "/independent-opinion/getList",
     "/kline/daily",
@@ -398,23 +679,62 @@
     "/sectors/constituents",
     "/sectors/search",
     "/securities/search",
+    "/stock-pool/addNote",
+    "/stock-pool/addStock",
+    "/stock-pool/createPool",
+    "/stock-pool/deleteNote",
+    "/stock-pool/deletePool",
+    "/stock-pool/deleteStock",
+    "/stock-pool/getNoteList",
     "/stock-pool/getPoolList",
     "/stock-pool/getStockList",
+    "/stock-pool/updateNote",
+    "/stock-pool/updatePool",
     "/summary/v2/download/file",
     "/summary/v2/getList",
     "/valuation-analysis",
+    "/web-search/search",
     "/wechatgroupmsg/chatroomId",
     "/wechatgroupmsg/list"
   ],
   "url_constants": {
+    "ADD_NOTE_URL": "/stock-pool/addNote",
+    "ADD_STOCK_URL": "/stock-pool/addStock",
+    "BOND_ANNOUNCEMENT_URL": "/bond/announcement",
+    "BOND_BASIC_INFO_URL": "/bond/basic-info",
+    "BOND_CASH_FLOW_URL": "/bond/cash-flow",
+    "BOND_DAILY_QUOTE_URL": "/bond/daily-quote-exchange-cfets",
+    "BOND_DEFAULT_LIST_URL": "/bond/default-list",
+    "BOND_EXERCISE_NOTICE_URL": "/bond/exercise-notice",
+    "BOND_ISSUANCE_DETAIL_URL": "/bond/issuance-detail",
+    "BOND_ISSUANCE_PLAN_URL": "/bond/issuance-plan",
+    "BOND_ISSUER_INFO_URL": "/bond/issuer-info",
+    "BOND_ISSUER_RATING_CHANGE_URL": "/bond/issuer-rating-change",
+    "BOND_RATING_CHANGE_URL": "/bond/rating-change",
+    "BOND_RATING_OVERVIEW_URL": "/bond/rating-overview",
+    "BOND_VALUATION_SHCLEARING_URL": "/bond/valuation-shclearing",
     "CHIEFS_SEARCH_URL": "/chiefs/search",
     "COMPANY_ANNOUNCEMENT_DOWNLOAD_URL": "/announcement/download/file",
     "COMPANY_ANNOUNCEMENT_URL": "/announcement/getList",
     "CONCEPT_SEARCH_URL": "/concepts/search",
-    "CONCEPT_SECURITIES_URL": "/concept/securities",
-    "CONCEPT_URL": "/concept/info",
+    "CONCEPT_SECURITIES_URL": "/concept/v2/securities",
+    "CONCEPT_URL": "/concept/v2/info",
+    "CONSTANTS_LIST_URL": "/constants/getList",
+    "CREATE_POOL_URL": "/stock-pool/createPool",
+    "DELETE_NOTE_URL": "/stock-pool/deleteNote",
+    "DELETE_POOL_URL": "/stock-pool/deletePool",
+    "DELETE_STOCK_URL": "/stock-pool/deleteStock",
+    "DRIVE_COPY_URL": "/drive/copy",
+    "DRIVE_CREATE_FOLDER_URL": "/drive/createFolder",
+    "DRIVE_DELETE_FILE_URL": "/drive/deleteFile",
+    "DRIVE_DELETE_FOLDER_URL": "/drive/deleteFolder",
     "DRIVE_DOWNLOAD_URL": "/drive/download/file",
+    "DRIVE_FOLDER_LIST_URL": "/drive/getFolderList",
     "DRIVE_LIST_URL": "/drive/getList",
+    "DRIVE_MOVE_FILE_URL": "/drive/moveFile",
+    "DRIVE_MOVE_FOLDER_URL": "/drive/moveFolder",
+    "DRIVE_RENAME_URL": "/drive/rename",
+    "DRIVE_UPLOAD_URL": "/drive/uploadFile",
     "EARNING_FORECAST_URL": "/earning-forecast",
     "EDB_GET_DATA_URL": "/EDB/getData",
     "EDB_SEARCH_URL": "/EDB/search",
@@ -426,12 +746,32 @@
     "FINANCIAL_REPORT_INCOME_URL": "/financial-report/income-statement/accumulated",
     "FINANCIAL_REPORT_URL": "/financial-report/income-statement/accumulated",
     "FOREIGN_OPINION_DETAIL_URL": "/foreign-opinion/getDetail",
-    "FOREIGN_OPINION_URL": "/foreign-opinion/getList",
+    "FOREIGN_OPINION_URL": "/foreign-opinion/v2/getList",
     "FOREIGN_REPORT_DOWNLOAD_URL": "/foreign-report/download/file",
     "FOREIGN_REPORT_URL": "/foreign-report/getList",
     "FORUM_LIST_URL": "/schedule/forum/getList",
+    "FUND_ASSET_ALLOCATION_URL": "/fund/asset-allocation",
+    "FUND_ASSET_SIZE_URL": "/fund/asset-size",
+    "FUND_BASIC_INFO_URL": "/fund/basic-info",
+    "FUND_BOND_PORTFOLIO_URL": "/fund/bond-portfolio",
+    "FUND_BOND_TYPE_ALLOCATION_URL": "/fund/bond-type-allocation",
+    "FUND_ETF_PCF_COMPONENTS_URL": "/fund/etf-pcf-components",
+    "FUND_ETF_PCF_HEADER_URL": "/fund/etf-pcf-header",
+    "FUND_ETF_SHARE_CHANGE_URL": "/fund/etf-share-change",
+    "FUND_FEE_RATE_URL": "/fund/fee-rate",
     "FUND_FLOW_DAILY_URL": "/fund-flow/daily",
+    "FUND_FLOW_SECTOR_DAILY_URL": "/fund-flow/sector-daily",
+    "FUND_FUND_PORTFOLIO_URL": "/fund/fund-portfolio",
+    "FUND_FUND_TYPE_ALLOCATION_URL": "/fund/fund-type-allocation",
+    "FUND_HOLDER_STRUCTURE_URL": "/fund/holder-structure",
+    "FUND_INDUSTRY_ALLOCATION_URL": "/fund/industry-allocation",
+    "FUND_MANAGER_HISTORY_URL": "/fund/manager-history",
+    "FUND_MANAGER_INFO_URL": "/fund/manager-info",
+    "FUND_NAV_URL": "/fund/nav",
+    "FUND_STOCK_PORTFOLIO_URL": "/fund/stock-portfolio",
+    "FUND_TOP10_HOLDERS_URL": "/fund/top10-holders",
     "GANGTISE_AGENT_URL": "/agent",
+    "GET_NOTE_LIST_URL": "/stock-pool/getNoteList",
     "GET_POOL_LIST_URL": "/stock-pool/getPoolList",
     "GET_STOCK_LIST_URL": "/stock-pool/getStockList",
     "HK_ANNOUNCEMENT_DOWNLOAD_URL": "/announcement-hk/download/file",
@@ -442,6 +782,7 @@
     "HOT_TOPIC_LIST_URL": "/hot-topic/getList",
     "INDEPENDENT_OPINION_DOWNLOAD_URL": "/independent-opinion/download/file",
     "INDEPENDENT_OPINION_LIST_URL": "/independent-opinion/getList",
+    "INDICATOR_CROSS_SECTION_URL": "/EDE/cross-section",
     "INDICATOR_SEARCH_URL": "/EDE/search",
     "INDICATOR_TIME_SERIES_URL": "/EDE/time-series",
     "INSTITUTIONS_SEARCH_URL": "/institutions/search",
@@ -454,16 +795,19 @@
     "OFFICIAL_ACCOUNT_LIST_URL": "/officialAccount/getList",
     "OFFICIAL_ACCOUNT_SEARCH_URL": "/officialAccount/search",
     "OPINION_DETAIL_URL": "/chief-opinion/getDetail",
-    "OPINION_URL": "/chief-opinion/getList",
+    "OPINION_URL": "/chief-opinion/v2/getList",
     "PAMIRS_SUMMARY_DOWNLOAD_URL": "/pamirs-summary/download/file",
     "PAMIRS_SUMMARY_URL": "/pamirs-summary/getList",
     "PERFORMANCE_CALENDAR_DOWNLOAD_URL": "/schedule/performance-calendar/download/file",
     "PERFORMANCE_CALENDAR_LIST_URL": "/schedule/performance-calendar/getList",
     "QA_DATA_LIST_URL": "/Q&A-data/getList",
     "QUOTE_ADJUST_FACTOR_URL": "/adjustFactor",
+    "QUOTE_HK_URL": "/kline-hk/daily",
+    "QUOTE_INDEX_DAILY_URL": "/index/kline/daily",
     "QUOTE_MINUTE_URL": "/kline/minute",
     "QUOTE_REALTIME_URL": "/quote/realtime",
     "QUOTE_URL": "/kline/daily",
+    "QUOTE_US_DAILY_URL": "/kline-us/daily",
     "RAG_URL": "/ai/search/knowledge_base",
     "RECORD_DOWNLOAD_URL": "/record/download/file",
     "RECORD_LIST_URL": "/record/getList",
@@ -481,12 +825,15 @@
     "SUMMARY_DOWNLOAD_URL": "/summary/v2/download/file",
     "SUMMARY_URL": "/summary/v2/getList",
     "TOP_HOLDERS_URL": "/capital-structure/top-holders",
+    "UPDATE_NOTE_URL": "/stock-pool/updateNote",
+    "UPDATE_POOL_URL": "/stock-pool/updatePool",
     "US_ANNOUNCEMENT_DOWNLOAD_URL": "/announcement-us/download/file",
     "US_ANNOUNCEMENT_LIST_URL": "/announcement-us/getList",
     "US_FINANCIAL_REPORT_BALANCE_URL": "/financial-report/balance-sheet/us",
     "US_FINANCIAL_REPORT_CASH_FLOW_URL": "/financial-report/cash-flow-statement/us",
     "US_FINANCIAL_REPORT_INCOME_URL": "/financial-report/income-statement/us",
     "VALUATION_URL": "/valuation-analysis",
+    "WEB_SEARCH_URL": "/web-search/search",
     "WECHAT_GROUP_CHATROOM_URL": "/wechatgroupmsg/chatroomId",
     "WECHAT_GROUP_MSG_LIST_URL": "/wechatgroupmsg/list"
   },

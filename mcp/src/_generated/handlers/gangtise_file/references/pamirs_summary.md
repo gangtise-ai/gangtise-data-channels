@@ -43,6 +43,11 @@ python3 scripts/get_industries.py
 python3 scripts/pamirs_summary.py -k AI智能体 --rank-type 2 -l 20
 ```
 
+**全文检索：**
+```bash
+python3 scripts/pamirs_summary.py -k AI智能体 --search-type 2 --rank-type 2 -l 20
+```
+
 **按证券 + 纪要类别：**
 ```bash
 python3 scripts/pamirs_summary.py --securities 科大讯飞 --category-list companyAnalysis,industryAnalysis

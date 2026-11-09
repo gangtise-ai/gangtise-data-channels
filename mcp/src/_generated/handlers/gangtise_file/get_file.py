@@ -515,6 +515,36 @@ def safe_file_title(file_item):
     return title
 
 
+def _opaque_server_filename(filename: str) -> bool:
+    """download/file 的 Content-Disposition 经常只有数字资源号，如 846933328228.pdf。"""
+    stem = os.path.splitext(os.path.basename(filename or ""))[0].strip()
+    return bool(stem) and stem.isdigit()
+
+
+def _download_save_name(resp_filename: Optional[str], title: Optional[str], content_type: str = "") -> str:
+    """数字资源号配上检索标题时，用标题作为保存名；服务端已给出可读文件名时保留。"""
+    resp_name = os.path.basename((resp_filename or "").strip())
+    ext = os.path.splitext(resp_name)[1]
+    if not ext:
+        ct = (content_type or "").lower()
+        if "pdf" in ct:
+            ext = ".pdf"
+        elif "html" in ct:
+            ext = ".html"
+        elif "markdown" in ct:
+            ext = ".md"
+        elif "zip" in ct:
+            ext = ".zip"
+        elif ct.startswith("text/"):
+            ext = ".txt"
+    safe_title = ""
+    if title:
+        safe_title = safe_file_title({"title": title, "url": ""})[:80].rstrip("._ ")
+    if safe_title and (not resp_name or _opaque_server_filename(resp_name)):
+        return safe_title + ext
+    return resp_name
+
+
 def _is_windows_style_path(path: str) -> bool:
     if not path:
         return False
@@ -785,6 +815,8 @@ def get_file(
         return_message = ""
         path_warn = ""
         resp_filename = _parse_content_disposition_filename(response.headers)
+        content_type = response.headers.get("Content-Type") or ""
+        save_name = _download_save_name(resp_filename, title, content_type)
         if output:
             try:
                 output = _normalize_user_path(output)
@@ -810,22 +842,18 @@ def get_file(
                 path_warn = f"[WARNING]{e}\n"
                 output_dir = None
         if not output and output_dir:
-            if not resp_filename:
+            if not save_name:
                 return path_warn + "获取文件失败：无法获取文件名"
-            file_name = os.path.basename(resp_filename)
-            if title:
-                file_name = safe_file_title({"title": title, "url": ""}) + os.path.splitext(file_name)[1]
-            output = _safe_output_path(_join_user_path(output_dir, file_name))
+            output = _safe_output_path(_join_user_path(output_dir, save_name))
             abs_output = os.path.abspath(output)
             return_message = _success_message_with_paths(
                 f"文件已保存到：`{abs_output}`",
                 [abs_output],
             )
         if not output:
-            if not resp_filename:
+            if not save_name:
                 return path_warn + "获取文件失败：无法获取文件名"
-            file_name = os.path.basename(resp_filename)
-            output = _safe_output_path(_join_user_path(file_dir, file_name))
+            output = _safe_output_path(_join_user_path(file_dir, save_name))
             abs_output = os.path.abspath(output)
             return_message = _success_message_with_paths(
                 f"文件已保存到：`{abs_output}`",
@@ -1069,6 +1097,11 @@ def main():
     parser.add_argument("-type", "--file-type", default="", help="文件类型")
     parser.add_argument("-od", "--output-dir", default="", help="输出目录路径")
     parser.add_argument(
+        "--title",
+        default="",
+        help="检索结果中的标题。下载接口只返回数字文件名时，用它作为保存名",
+    )
+    parser.add_argument(
         "-dt",
         "--download-type",
         default="markdown",
@@ -1093,6 +1126,7 @@ def main():
         file_type=file_type,
         output_dir=args.output_dir,
         download_type=args.download_type,
+        title=args.title.strip() or None,
     )
     print(out)
 

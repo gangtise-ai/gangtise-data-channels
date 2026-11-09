@@ -40,12 +40,15 @@ curl -sS http://127.0.0.1:8000/health
 | `MCP_TRANSPORT` | `http` | `http` / `sse` / `both` |
 | `MCP_PATH` | `/` | 进程内 MCP 挂载路径 |
 | `SUBPATHS` | 空 | 来源子路径，逗号分隔。例如 `doubao,ali` 时 `/open-mcp/doubao/` 与 `/open-mcp/` 落到同一服务 |
+| `SUBPATHS_MODE` | 空 | 子路径暴露模式，如 `doubao:leaf;progressive:progressive`。未声明的子路径默认 leaf；主路径仍按 `MCP_TOOL_EXPOSURE` |
+| `MCP_PROGRESSIVE_SUBPATH` | 空 | 兼容简写：并入 `SUBPATHS` 且该入口为 progressive（等同 `SUBPATHS_MODE` 中 `{name}:progressive`） |
 | `MCP_REQUIRE_AUTH` | `true` | MCP 路径没有 Authorization 或 AK/SK 时返回 401 |
-| `MCP_TOOL_BLACKLIST` | 空 | 逗号分隔。可写 skill 名（如 `gangtise-web`）或工具名（如 `fund_nav`） |
+| `MCP_TOOL_BLACKLIST` | 空 | 工具/skill 黑名单。主段对所有入口生效；可用 `;子路径:名` 追加。例：`A,B;doubao:C;progressive:D,E` → 主路径屏蔽 A,B；doubao 屏蔽 A,B,C；progressive 屏蔽 A,B,D,E |
 | `MCP_HOST` / `MCP_PORT` | `0.0.0.0` / `8000` | 监听地址 |
 | `GTS_JWT_SECRET` | 空 | 设置后启用本机 OAuth。未设置时 `/oauth/*` 返回 503，AK/SK 与 Authorization 仍可用 |
 | `GTS_OAUTH_RESOURCE` | 空（默认本服务） | OAuth `resource` 基址 |
-| `GTS_OAUTH_ISSUER` | 空（回退本服务） | `authorization_servers` 的 issuer。指向外部授权服务时须与其 metadata 的 `issuer` 一致 |
+| `GTS_OAUTH_ISSUER` | 空（回退本服务） | `authorization_servers` 的公网 issuer；浏览器授权 302 也用它。指向外部 AS 时须与其 metadata `issuer` 一致 |
+| `GTS_OAUTH_UPSTREAM` | `https://auth.gangtise.com` | 外部 AS 时，MCP 路径下 `/oauth/*`、`/.well-known/openid-configuration` 等转发基址。集群内可填内网，例如 `http://workbuddy-connector-server.platform-business:15684` |
 | `GTS_OAUTH_SCOPES` | `mcp` | 保护资源 metadata 的 `scopes_supported`。使用外部授权服务时须与其 scope 一致，例如 `mcp.read mcp.write` |
 | `GTS_ACCESS_KEY` / `GTS_SECRET_KEY` | 空 | 进程级 AK/SK。远程客户端更常见的是每个请求自己带请求头 |
 | `OBS_*` | 空 | 可选附件外置：`OBS_ACCESS_KEY` / `OBS_SECRET_KEY` / `OBS_ENDPOINT` / `OBS_BUCKET` / `OBS_PATH` |

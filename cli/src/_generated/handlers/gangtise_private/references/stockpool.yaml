@@ -3,12 +3,14 @@
 name: stockpool
 title: Stockpool
 description: |
-  自选股股票池：检索股票池、获取池内证券，以及创建/重命名/删除股票池、添加/移除证券，通过 mode 区分。
-  create/rename/delete/add_stock/delete_stock 会修改用户股票池，调用前须与用户确认。
+  个人自选股与所属租户股票池，以及本人个股投资笔记：检索股票池、获取池内证券，创建/重命名/删除股票池、添加/移除证券，查询/新增/修改/删除个股笔记，通过 mode 区分。
+  search/get 用 space_type 选择区域：1 个人自选股（默认），2 所属租户。查询证券明细时 space_type 须与 pool_ids 同区域。
+  create/rename/delete/add_stock/delete_stock 仅支持个人自选股，会修改用户股票池，调用前须与用户确认。
+  search_note/add_note/update_note/delete_note 操作本人笔记；delete_note 不可恢复，须先核对再确认。
 parameters:
   mode:
     type: string
-    description: "search 列股票池（默认，提供 pool_ids/all_pools 时自动取证券）；get 取池内证券；create 创建池；rename 重命名池；delete 删除池（可多个）；add_stock 向池添加证券；delete_stock 从池移除证券"
+    description: "search 列股票池（默认，提供 pool_ids/all_pools 时自动取证券）；get 取池内证券；create/rename/delete/add_stock/delete_stock 管理个人池；search_note 查个股笔记；add_note 新增笔记；update_note 改正文；delete_note 批量删除笔记。search/get 可配合 space_type 查所属租户"
     enum:
       - search
       - get
@@ -17,27 +19,52 @@ parameters:
       - delete
       - add_stock
       - delete_stock
+      - search_note
+      - add_note
+      - update_note
+      - delete_note
     default: search
   keyword:
     type: string
     description: 股票池名称或 ID 子串过滤（search）
   pool_ids:
     type: string
-    description: 池 ID 或名称，逗号分隔。仅字母数字与逗号时视为 ID；否则按名称唯一完全匹配解析。get/delete 可多个，rename/add_stock/delete_stock 仅一个
+    description: 池 ID 或名称，逗号分隔。仅字母数字与逗号时视为 ID；否则在当前 space_type 内按名称唯一完全匹配解析。get/delete 可多个，rename/add_stock/delete_stock 仅一个。查明细时须与 space_type 同区域
   all_pools:
     type: boolean
-    description: get 使用 poolIdList=["all"]（提供后自动 get）
+    description: get 使用 poolIdList=["all"]，取所选 space_type 内全部可见池的去重证券（提供后自动 get）
+  space_type:
+    type: string
+    description: 股票池区域，仅 search/get。1 个人自选股（默认），2 所属租户；也可传「个人」「租户」。不传按 1。查询证券时须与 pool_ids 所属区域一致。管理类模式只接受 1
+    default: "1"
   limit:
     type: integer
-    description: search 列出/过滤的股票池数量上限（默认 100）
+    description: search 列出/过滤的股票池数量上限（默认 100）；search_note 时为自动翻页累计条数上限
   pool_name:
     type: string
     description: 股票池名称，最长 10 字符，不可与已有池重名（create 的新池名；rename 的新名称）
   securities:
     type: array
-    description: 证券代码，须带市场后缀，如 600519.SH、00700.HK、AAPL.O（add_stock/delete_stock）
+    description: 证券代码，须带市场后缀，如 600519.SH、00700.HK、AAPL.O。用于 add_stock/delete_stock；search_note/add_note 亦可（search_note 可单独传 all 查本人全部笔记）
     items:
       type: string
+  note_ids:
+    type: string
+    description: 个股笔记 ID，逗号分隔（search_note / update_note / delete_note；update_note 仅一个；与 securities/all_notes 互斥）
+  note_content:
+    type: string
+    description: 个股笔记正文（add_note / update_note），不可空白，最长 10000 字符
+  all_notes:
+    type: boolean
+    description: search_note 查询本人全部笔记（securityList=["all"]）
+  page_from:
+    type: integer
+    description: search_note 起始偏移量（不是页码），默认 0
+    default: 0
+  page_size:
+    type: integer
+    description: search_note 单页条数，1～50，默认 20；配合 limit 可自动翻页
+    default: 20
   confirm:
     type: boolean
-    description: delete 必填 true：删除不可恢复。须先向用户列出将被删除的对象并取得明确同意后才能传 true；被拒后不要自行补 true 重试
+    description: delete / delete_note 必填 true：删除不可恢复。须先向用户列出将被删除的对象并取得明确同意后才能传 true；被拒后不要自行补 true 重试
