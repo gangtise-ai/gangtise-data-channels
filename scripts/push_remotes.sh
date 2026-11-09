@@ -60,25 +60,38 @@ push_gitlab_with_private() {
   fi
 
   echo "==> gitlab：临时纳入 ${PRIVATE_FILE} 后推送 ${BRANCH}:${GITLAB_BRANCH}"
-  local before
+  local before private_bak
   before="$(git rev-parse HEAD)"
+  private_bak="$(mktemp)"
+  cp "${PRIVATE_FILE}" "${private_bak}"
+
   git add -f "${PRIVATE_FILE}"
   if git diff --cached --quiet; then
-    echo "（私有文件相对 HEAD 无变化，直接推送）"
-    git push --force-with-lease gitlab "${BRANCH}:${GITLAB_BRANCH}"
-    return 0
-  fi
-
-  git commit -m "$(cat <<'EOF'
+    echo "（工作树与 index 无新私有改动，仍确保 tip 含该文件后推送）"
+  else
+    git commit -m "$(cat <<'EOF'
 internal: include ali_mcp_credential.py for GitLab builds
 
 EOF
 )"
-  # 内网仓允许 --force-with-lease：gitlab tip 常比公开仓多这一笔私有提交
-  git push --force-with-lease gitlab "HEAD:${GITLAB_BRANCH}"
+  fi
 
-  git reset --soft "${before}"
-  git restore --staged "${PRIVATE_FILE}"
+  # main 受保护时禁止 force；先 fetch+merge 再普通推送
+  git fetch gitlab "${GITLAB_BRANCH}"
+  git merge -m "merge gitlab/${GITLAB_BRANCH} before publishing private credential module" \
+    "FETCH_HEAD" || {
+    echo "gitlab merge 冲突，请手动处理后再推" >&2
+    git merge --abort 2>/dev/null || true
+    git reset --hard "${before}"
+    cp "${private_bak}" "${PRIVATE_FILE}"
+    rm -f "${private_bak}"
+    return 1
+  }
+  git push gitlab "HEAD:${GITLAB_BRANCH}"
+
+  git reset --hard "${before}"
+  cp "${private_bak}" "${PRIVATE_FILE}"
+  rm -f "${private_bak}"
   echo "==> 本地已恢复为公开 tip（${before:0:7}），工作区保留 ${PRIVATE_FILE}"
 }
 
