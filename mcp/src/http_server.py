@@ -98,12 +98,48 @@ async def list_tools() -> List[Tool]:
 async def call_tool(
     name: str, arguments: Dict[str, Any]
 ) -> Any:
+    import time
+
+    from access_log import log_tool_call, parse_tool_error
+
+    started = time.monotonic()
     auth_err = _check_auth_env()
     if auth_err:
-        return tool_error(auth_err, code="UNAUTHORIZED")
+        result = tool_error(auth_err, code="UNAUTHORIZED")
+        err = parse_tool_error(result) or {"code": "UNAUTHORIZED", "message": auth_err}
+        log_tool_call(
+            tool=name,
+            status="error",
+            duration_ms=(time.monotonic() - started) * 1000.0,
+            error_code=err.get("code"),
+            error_message=err.get("message"),
+        )
+        return result
 
     if name == GET_JOB_RESULT_TOOL:
-        return try_call_infra_tool(name, arguments)
+        from url_whitelist import get_tool_blacklist
+
+        if name in get_tool_blacklist():
+            result = tool_error(f"工具已列入部署黑名单: {name}", code="FORBIDDEN")
+            err = parse_tool_error(result) or {"code": "FORBIDDEN", "message": "blacklisted"}
+            log_tool_call(
+                tool=name,
+                status="error",
+                duration_ms=(time.monotonic() - started) * 1000.0,
+                error_code=err.get("code"),
+                error_message=err.get("message"),
+            )
+            return result
+        result = try_call_infra_tool(name, arguments)
+        err = parse_tool_error(result)
+        log_tool_call(
+            tool=name,
+            status="error" if err else "ok",
+            duration_ms=(time.monotonic() - started) * 1000.0,
+            error_code=(err or {}).get("code"),
+            error_message=(err or {}).get("message"),
+        )
+        return result
 
     attach = os.getenv("MCP_ATTACH_FILES", "").lower() not in ("0", "false", "no", "off")
     return await skill_tools.call_tool(name, arguments, attach=attach)
@@ -413,6 +449,21 @@ def main(argv: list[str] | None = None) -> None:
     if subpaths:
         print(
             f"[gangtise-mcp] SUBPATHS={','.join(subpaths)} (MCP_PATH={args.path})",
+            file=sys.stderr,
+        )
+    from subpath_routing import parse_subpaths_mode, progressive_subpaths
+
+    modes = parse_subpaths_mode()
+    if modes:
+        parts = [f"{name}={mode}" for name, mode in modes.items()]
+        print(
+            f"[gangtise-mcp] SUBPATHS_MODE: {'; '.join(parts)} "
+            f"（未声明默认 leaf；主路径={os.getenv('MCP_TOOL_EXPOSURE') or 'leaf'}）",
+            file=sys.stderr,
+        )
+    for prog in progressive_subpaths():
+        print(
+            f"[gangtise-mcp] progressive 入口: {args.path.rstrip('/')}/{prog}/",
             file=sys.stderr,
         )
     _run_network(

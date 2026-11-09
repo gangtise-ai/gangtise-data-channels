@@ -14,8 +14,14 @@ export MCP_PATH="${MCP_PATH:-/}"
 export MCP_STATELESS="${MCP_STATELESS:-true}"
 export MCP_JSON_RESPONSE="${MCP_JSON_RESPONSE:-true}"
 export SUBPATHS="${SUBPATHS:-}"
+export SUBPATHS_MODE="${SUBPATHS_MODE:-}"
+export MCP_PROGRESSIVE_SUBPATH="${MCP_PROGRESSIVE_SUBPATH:-}"
 export GTS_CALLER="${GTS_CALLER:-mcp}"
+export WORK_PATH="${WORK_PATH:-/opt/data}"
+export MCP_LOG_DIR="${MCP_LOG_DIR:-${WORK_PATH}/logs}"
 export PYTHONPATH="${GTS_MCP_ROOT}/src:${GTS_MCP_ROOT}/src/_generated:${PYTHONPATH:-}"
+
+mkdir -p "${MCP_LOG_DIR}"
 
 if [[ -z "${MCP_PATH// }" ]]; then
   export MCP_PATH=/

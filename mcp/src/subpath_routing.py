@@ -3,17 +3,93 @@
 示例：MCP_PATH=/open-mcp，SUBPATHS=doubao,ali,comate
   POST /open-mcp/          → 内部 /open-mcp（source 为空）
   POST /open-mcp/doubao/   → 内部 /open-mcp（source=doubao）
+
+SUBPATHS_MODE 为各子路径指定工具暴露模式，例如 ``A:leaf;B:progressive``。
+未写明的子路径默认 leaf。主路径（无 source）仍按 MCP_TOOL_EXPOSURE。
+
+MCP_PROGRESSIVE_SUBPATH（如 progressive）为兼容简写：并入子路径且该来源为 progressive。
 """
 from __future__ import annotations
 
 import json
 import os
 import sys
-from typing import Callable, Iterable, Optional, Set, Tuple
+from contextvars import ContextVar, Token
+from typing import Callable, Dict, Iterable, Optional, Set, Tuple
+
+_request_mcp_source: ContextVar[str] = ContextVar("mcp_source", default="")
+
+_SKILL_MODE_ALIASES = frozenset({"skill", "skills", "progressive"})
+_LEAF_MODE_ALIASES = frozenset({"leaf", "flat"})
+
+
+def get_request_mcp_source() -> str:
+    """当前 HTTP 请求的来源子路径（无则空串）。"""
+    return (_request_mcp_source.get() or "").strip().strip("/")
+
+
+def set_request_mcp_source(source: Optional[str]) -> Token:
+    return _request_mcp_source.set((source or "").strip().strip("/"))
+
+
+def reset_request_mcp_source(token: Token) -> None:
+    _request_mcp_source.reset(token)
+
+
+def progressive_subpath(raw: Optional[str] = None) -> Optional[str]:
+    """渐进式披露专用子路径名（MCP_PROGRESSIVE_SUBPATH）；空=未启用该简写。"""
+    text = raw if raw is not None else os.getenv("MCP_PROGRESSIVE_SUBPATH", "")
+    name = (text or "").strip().strip("/")
+    return name or None
+
+
+def _normalize_exposure_token(raw: str) -> str:
+    mode = (raw or "").strip().lower()
+    if mode in _SKILL_MODE_ALIASES:
+        return "skill"
+    return "leaf"
+
+
+def parse_subpaths_mode(raw: Optional[str] = None) -> Dict[str, str]:
+    """解析 SUBPATHS_MODE → ``{subpath: leaf|skill}``。
+
+    格式：``A:leaf;B:progressive``。另将 MCP_PROGRESSIVE_SUBPATH 标为 skill（若未覆盖）。
+    """
+    text = raw if raw is not None else os.getenv("SUBPATHS_MODE", "")
+    out: Dict[str, str] = {}
+    for segment in (text or "").replace("；", ";").split(";"):
+        seg = segment.strip()
+        if not seg or ":" not in seg:
+            continue
+        left, right = seg.split(":", 1)
+        name = left.strip().strip("/")
+        if not name:
+            continue
+        out[name] = _normalize_exposure_token(right)
+    prog = progressive_subpath()
+    if prog and prog not in out:
+        out[prog] = "skill"
+    return out
+
+
+def exposure_for_source(source: Optional[str] = None) -> Optional[str]:
+    """返回子路径暴露模式 ``leaf``/``skill``；主路径（空 source）返回 None。
+
+    子路径未在 SUBPATHS_MODE 中声明时默认 leaf。
+    """
+    src = (source if source is not None else get_request_mcp_source()).strip().strip("/")
+    if not src:
+        return None
+    return parse_subpaths_mode().get(src, "leaf")
+
+
+def progressive_subpaths() -> Tuple[str, ...]:
+    """所有 progressive/skill 模式的子路径名（稳定顺序）。"""
+    return tuple(name for name, mode in parse_subpaths_mode().items() if mode == "skill")
 
 
 def parse_subpaths(raw: Optional[str] = None) -> Tuple[str, ...]:
-    """解析 SUBPATHS 环境变量，返回去重后的子路径名（不含斜杠）。"""
+    """解析 SUBPATHS，并合并 SUBPATHS_MODE / MCP_PROGRESSIVE_SUBPATH 中的名称。"""
     text = raw if raw is not None else os.getenv("SUBPATHS", "")
     seen: set[str] = set()
     out: list[str] = []
@@ -23,6 +99,10 @@ def parse_subpaths(raw: Optional[str] = None) -> Tuple[str, ...]:
             continue
         seen.add(name)
         out.append(name)
+    for name in parse_subpaths_mode():
+        if name not in seen:
+            seen.add(name)
+            out.append(name)
     return tuple(out)
 
 
@@ -113,20 +193,39 @@ def log_mcp_access(
     tool: Optional[str] = None,
     function: Optional[str] = None,
 ) -> None:
-    record = {
-        "event": "mcp_access",
-        "source": source or "",
-        "path": path,
-        "method": method,
-        "request_id": request_id,
-    }
-    if mcp_method:
-        record["mcp_method"] = mcp_method
-    if tool:
-        record["tool"] = tool
-    if function:
-        record["function"] = function
-    print(f"[mcp-access] {json.dumps(record, ensure_ascii=False)}", file=sys.stderr, flush=True)
+    try:
+        from access_log import log_access
+
+        log_access(
+            source=source,
+            path=path,
+            method=method,
+            request_id=request_id,
+            mcp_method=mcp_method,
+            tool=tool,
+            function=function,
+        )
+        return
+    except Exception as exc:
+        # 日志模块异常时仍打 stderr，避免影响主链路
+        record = {
+            "event": "mcp_access",
+            "source": source or "",
+            "path": path,
+            "method": method,
+            "request_id": request_id,
+        }
+        if mcp_method:
+            record["mcp_method"] = mcp_method
+        if tool:
+            record["tool"] = tool
+        if function:
+            record["function"] = function
+        print(
+            f"[mcp-access] fallback={exc} {json.dumps(record, ensure_ascii=False)}",
+            file=sys.stderr,
+            flush=True,
+        )
 
 
 class _BodyReplayReceive:

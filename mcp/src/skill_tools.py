@@ -6,6 +6,10 @@ MCP_TOOL_EXPOSURE（默认 leaf）：
          调用 skill 工具时不传 function（或 function="help"）返回旗下全部 function 的说明与参数，
          传 function + arguments 则执行对应脚本。
 
+HTTP 多入口：SUBPATHS_MODE=``A:leaf;B:progressive`` 按子路径切换暴露模式（未声明默认 leaf）；
+主路径仍按 MCP_TOOL_EXPOSURE。MCP_PROGRESSIVE_SUBPATH 为兼容简写。
+MCP_TOOL_BLACKLIST 可按子路径追加屏蔽项。
+
 无论哪种模式，call_tool 都同时接受 skill 名与叶子工具名。
 """
 from __future__ import annotations
@@ -15,17 +19,20 @@ import inspect
 import io
 import json
 import os
+import time
 from contextlib import redirect_stdout
 from contextvars import copy_context
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from mcp.types import TextContent, Tool
 
+from access_log import log_exception, log_tool_call, parse_tool_error
 from catalog import INTERNAL_PARAMS, Catalog, ToolSpec, load_catalog
 from gangtise_core.format import invoke_legacy, render_mcp_text
 from gangtise_core.result import Result
 from job_result import list_infra_tools
 from result_attachments import with_path_attachments
+from subpath_routing import exposure_for_source, progressive_subpaths
 from tool_errors import coerce_tool_kwargs, tool_error
 from url_whitelist import get_tool_blacklist, get_white_list, tool_denied_reason
 
@@ -39,6 +46,9 @@ _SKILL_INPUT_DESC = {
 
 
 def exposure_mode() -> str:
+    sub = exposure_for_source()
+    if sub is not None:
+        return sub
     mode = (os.getenv(EXPOSURE_ENV) or "leaf").strip().lower()
     return "skill" if mode in ("skill", "skills", "progressive") else "leaf"
 
@@ -149,7 +159,8 @@ def _skill_tool(cat: Catalog, label: str, functions: List[str]) -> Tool:
 def list_tools() -> List[Tool]:
     cat = load_catalog()
     wl = get_white_list()
-    tools: List[Tool] = list(list_infra_tools())
+    bl = get_tool_blacklist()
+    tools: List[Tool] = [t for t in list_infra_tools() if t.name not in bl]
     if exposure_mode() == "leaf":
         for spec in cat.specs:
             if spec.name in cat.handlers and _flat_denied(cat, spec.name, wl) is None:
@@ -185,11 +196,57 @@ def _missing_required(spec: Optional[ToolSpec], arguments: Dict[str, Any]) -> Li
     return [p for p in required if arguments.get(p) in (None, "", [])]
 
 
-async def invoke_flat(cat: Catalog, flat: str, arguments: Dict[str, Any], *, attach: bool) -> Any:
+def _emit_tool_result(
+    *,
+    tool: str,
+    result: Any,
+    started: float,
+    function: Optional[str] = None,
+    skill: Optional[str] = None,
+) -> Any:
+    duration_ms = (time.monotonic() - started) * 1000.0
+    err = parse_tool_error(result)
+    if err:
+        log_tool_call(
+            tool=tool,
+            function=function,
+            skill=skill,
+            status="error",
+            duration_ms=duration_ms,
+            error_code=err.get("code"),
+            error_message=err.get("message"),
+        )
+    else:
+        log_tool_call(
+            tool=tool,
+            function=function,
+            skill=skill,
+            status="ok",
+            duration_ms=duration_ms,
+        )
+    return result
+
+
+async def invoke_flat(
+    cat: Catalog,
+    flat: str,
+    arguments: Dict[str, Any],
+    *,
+    attach: bool,
+    skill: Optional[str] = None,
+    function: Optional[str] = None,
+) -> Any:
+    started = time.monotonic()
     handler = cat.handlers[flat]
     filtered, param_err = _filter_arguments(handler, arguments)
     if param_err:
-        return tool_error(param_err, code="INVALID_PARAMS")
+        return _emit_tool_result(
+            tool=flat,
+            function=function,
+            skill=skill,
+            started=started,
+            result=tool_error(param_err, code="INVALID_PARAMS"),
+        )
     filtered = coerce_tool_kwargs(handler, filtered)
     try:
         ctx = copy_context()
@@ -202,20 +259,45 @@ async def invoke_flat(cat: Catalog, flat: str, arguments: Dict[str, Any], *, att
 
         result, stdout_text = await asyncio.to_thread(ctx.run, _invoke)
     except TypeError as e:
-        return tool_error(f"参数错误: {e}", code="INVALID_PARAMS")
+        return _emit_tool_result(
+            tool=flat,
+            function=function,
+            skill=skill,
+            started=started,
+            result=tool_error(f"参数错误: {e}", code="INVALID_PARAMS"),
+        )
     except Exception as e:
-        return tool_error(f"调用失败: {e}", code="INTERNAL_ERROR")
+        log_exception(where="invoke_flat", exc=e, tool=flat, function=function)
+        return _emit_tool_result(
+            tool=flat,
+            function=function,
+            skill=skill,
+            started=started,
+            result=tool_error(f"调用失败: {e}", code="INTERNAL_ERROR"),
+        )
 
     if isinstance(result, Result) and not result.ok:
         code = getattr(result.error, "code", None) or "TOOL_ERROR"
-        return tool_error(result.text or str(result.error or "调用失败"), code=str(code))
+        return _emit_tool_result(
+            tool=flat,
+            function=function,
+            skill=skill,
+            started=started,
+            result=tool_error(result.text or str(result.error or "调用失败"), code=str(code)),
+        )
     if isinstance(result, Result):
         text = render_mcp_text(result)
     else:
         text = "" if result is None else str(result)
     if stdout_text:
         text = stdout_text + text
-    return with_path_attachments(text, enabled=attach, source_tool=flat)
+    return _emit_tool_result(
+        tool=flat,
+        function=function,
+        skill=skill,
+        started=started,
+        result=with_path_attachments(text, enabled=attach, source_tool=flat),
+    )
 
 
 def _parse_skill_arguments(raw: Dict[str, Any]) -> Tuple[str, Dict[str, Any], Optional[str]]:
@@ -243,51 +325,112 @@ def _with_usage(message: str, cat: Catalog, label: str, function: str) -> str:
 
 
 async def call_skill(cat: Catalog, label: str, raw: Dict[str, Any], *, attach: bool) -> Any:
+    started = time.monotonic()
     function, arguments, err = _parse_skill_arguments(raw or {})
     wl = get_white_list()
     functions = allowed_functions(cat, label, wl)
     if not functions:
-        return tool_error(f"无权限调用 {label} 下的任何 function", code="FORBIDDEN")
+        return _emit_tool_result(
+            tool=label,
+            skill=label,
+            function=function or None,
+            started=started,
+            result=tool_error(f"无权限调用 {label} 下的任何 function", code="FORBIDDEN"),
+        )
     if err:
-        return tool_error(err, code="INVALID_PARAMS")
+        return _emit_tool_result(
+            tool=label,
+            skill=label,
+            function=function or None,
+            started=started,
+            result=tool_error(err, code="INVALID_PARAMS"),
+        )
     if not function or function == HELP_FUNCTION:
-        return [TextContent(type="text", text=describe_skill(cat, label, functions))]
+        return _emit_tool_result(
+            tool=label,
+            skill=label,
+            function=HELP_FUNCTION,
+            started=started,
+            result=[TextContent(type="text", text=describe_skill(cat, label, functions))],
+        )
 
     flat = cat.resolve_function(label, function)
     if flat is None:
-        return tool_error(
-            f"{label} 下没有 function: {function}。可用: {', '.join(functions)}",
-            code="UNKNOWN_TOOL",
+        return _emit_tool_result(
+            tool=label,
+            skill=label,
+            function=function,
+            started=started,
+            result=tool_error(
+                f"{label} 下没有 function: {function}。可用: {', '.join(functions)}",
+                code="UNKNOWN_TOOL",
+            ),
         )
     denied = _flat_denied(cat, flat, wl)
     if denied:
-        return tool_error(f"无权限调用 {label}.{function}: {denied}", code="FORBIDDEN")
+        return _emit_tool_result(
+            tool=flat,
+            skill=label,
+            function=function,
+            started=started,
+            result=tool_error(f"无权限调用 {label}.{function}: {denied}", code="FORBIDDEN"),
+        )
     missing = _missing_required(cat.spec_map.get(flat), arguments)
     if missing:
-        return tool_error(
-            _with_usage(f"缺少必填参数: {', '.join(missing)}", cat, label, function),
-            code="INVALID_PARAMS",
+        return _emit_tool_result(
+            tool=flat,
+            skill=label,
+            function=function,
+            started=started,
+            result=tool_error(
+                _with_usage(f"缺少必填参数: {', '.join(missing)}", cat, label, function),
+                code="INVALID_PARAMS",
+            ),
         )
     _, param_err = _filter_arguments(cat.handlers[flat], arguments)
     if param_err:
-        return tool_error(_with_usage(param_err, cat, label, function), code="INVALID_PARAMS")
-    return await invoke_flat(cat, flat, arguments, attach=attach)
+        return _emit_tool_result(
+            tool=flat,
+            skill=label,
+            function=function,
+            started=started,
+            result=tool_error(_with_usage(param_err, cat, label, function), code="INVALID_PARAMS"),
+        )
+    return await invoke_flat(
+        cat, flat, arguments, attach=attach, skill=label, function=function
+    )
 
 
 async def call_tool(name: str, arguments: Optional[Dict[str, Any]], *, attach: bool) -> Any:
     """分发 skill 工具或叶子工具（get_job_result / 鉴权由调用方先处理）。"""
+    started = time.monotonic()
     cat = load_catalog()
     if name in cat.skills:
         return await call_skill(cat, name, arguments or {}, attach=attach)
     if name not in cat.handlers:
-        return tool_error(f"未知工具: {name}", code="UNKNOWN_TOOL")
+        return _emit_tool_result(
+            tool=name,
+            started=started,
+            result=tool_error(f"未知工具: {name}", code="UNKNOWN_TOOL"),
+        )
     denied = _flat_denied(cat, name, None)
     if denied:
-        return tool_error(f"无权限调用工具 {name}: {denied}", code="FORBIDDEN")
+        return _emit_tool_result(
+            tool=name,
+            started=started,
+            result=tool_error(f"无权限调用工具 {name}: {denied}", code="FORBIDDEN"),
+        )
     return await invoke_flat(cat, name, arguments or {}, attach=attach)
 
 
 def mounted_summary(cat: Catalog) -> str:
+    progs = progressive_subpaths()
+    if progs:
+        prog_part = ", ".join(f"/{p}/ =skill" for p in progs)
+        return (
+            f"已挂载多入口：主路径={os.getenv(EXPOSURE_ENV) or 'leaf'}；"
+            f"{prog_part}（{len(cat.skills)} skills / {len(cat.handlers)} functions）"
+        )
     if exposure_mode() == "leaf":
         return f"已挂载 {len(cat.handlers)} 个叶子工具"
     return f"已挂载 {len(cat.skills)} 个 skill 工具（共 {len(cat.handlers)} 个 function，渐进式披露）"

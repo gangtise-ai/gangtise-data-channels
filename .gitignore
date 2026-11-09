@@ -38,6 +38,8 @@ mcp/gangtise-mcp.yaml
 mcp/configmap.yaml
 mcp/.gitlab-ci.yml
 mcp/connectors/
+mcp/src/ali_mcp_credential.py
+mcp/src/ali_mcp_credential.pyi
 mcp/token_refresh/**
 !mcp/token_refresh/.dockerkeep
 !mcp/token_refresh/gts_token_refresh.py

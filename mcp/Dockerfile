@@ -30,6 +30,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     MCP_LAYOUT=unified \
     MCP_PATH=/ \
     SUBPATHS= \
+    SUBPATHS_MODE= \
+    MCP_PROGRESSIVE_SUBPATH= \
     MCP_STATELESS=true \
     MCP_JSON_RESPONSE=true \
     MCP_REQUIRE_AUTH=true \
@@ -57,8 +59,9 @@ RUN set -eux; \
     if [ -n "${PIP_EXTRA_INDEX_URL}" ]; then PIP_OPTS="${PIP_OPTS} --extra-index-url ${PIP_EXTRA_INDEX_URL}"; fi; \
     if [ -n "${PIP_TRUSTED_HOST}" ]; then PIP_OPTS="${PIP_OPTS} --trusted-host ${PIP_TRUSTED_HOST}"; fi; \
     chmod +x /entrypoint.sh; \
-    mkdir -p /opt/data /opt/mcp; \
+    mkdir -p /opt/data /opt/data/logs /opt/mcp; \
     test -d /app/mcp/src/_generated/gangtise_core; \
+    cp /app/mcp/tool_url_deps.json /opt/mcp/tool_url_deps.json; \
     pip install --upgrade pip ${PIP_OPTS}; \
     pip install ${PIP_OPTS} \
         "mcp>=1.0.0,<2" \
@@ -76,6 +79,6 @@ RUN set -eux; \
        fi; \
     rm -rf /root/.cache/pip
 
-RUN mkdir -p /opt/data
+RUN mkdir -p /opt/data /opt/data/logs
 EXPOSE 8000
 ENTRYPOINT ["/entrypoint.sh"]

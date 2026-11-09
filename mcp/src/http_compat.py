@@ -362,6 +362,14 @@ class HttpMiddleware:
         creds = parse_credentials_from_headers(headers)
         extra = parse_headers_extra_from_headers(headers)
 
+        request_id_token = None
+        try:
+            from access_log import set_request_id
+
+            request_id_token = set_request_id(request_id)
+        except Exception:
+            request_id_token = None
+
         reauth_token = None
         try:
             from authorization import begin_reauthorization_tracker, reset_reauthorization_tracker
@@ -376,6 +384,7 @@ class HttpMiddleware:
         oauth_creds = None
         oauth_identity: Optional[Dict[str, str]] = None
         oauth_class: Optional[str] = None
+        ali_invalid_message: Optional[str] = None
         if auth:
             try:
                 from oauth_server import (
@@ -393,13 +402,66 @@ class HttpMiddleware:
                 oauth_identity = None
                 oauth_class = None
 
-        if oauth_class == "invalid" and require_auth_enabled() and self._is_mcp_path(path):
+            if oauth_class is None and oauth_creds is None:
+                try:
+                    from ali_mcp_credential import (  # type: ignore[import-not-found]
+                        AliMcpCredentialError,
+                        is_ali_mcp_token,
+                        try_ali_mcp_to_credentials,
+                    )
+                except ImportError:
+                    # 公开仓无对接模块：ali 密文无法解密，若命中前缀则按无效 token 处理
+                    try:
+                        token_peek = auth.strip()
+                        if token_peek.lower().startswith("bearer "):
+                            token_peek = token_peek[7:].strip()
+                        if token_peek.startswith("ali-mcp-v1."):
+                            ali_invalid_message = (
+                                "Ali MCP credential decryptor unavailable on this build"
+                            )
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        if is_ali_mcp_token(auth):
+                            oauth_creds = try_ali_mcp_to_credentials(auth)
+                            if not oauth_creds:
+                                ali_invalid_message = "Ali MCP token decrypt returned empty credentials"
+                    except Exception as exc:
+                        # AliMcpCredentialError 及其它解密异常 → 401
+                        name = type(exc).__name__
+                        if name == "AliMcpCredentialError" or isinstance(
+                            exc, AliMcpCredentialError
+                        ):
+                            ali_invalid_message = str(exc) or "Ali MCP token decrypt failed"
+                        else:
+                            ali_invalid_message = f"Ali MCP token decrypt failed: {exc}"
+
+        if (
+            (oauth_class == "invalid" or ali_invalid_message)
+            and require_auth_enabled()
+            and self._is_mcp_path(path)
+        ):
+            err_desc = ali_invalid_message or "OAuth access token expired or invalid"
+            try:
+                from access_log import write_event
+
+                write_event(
+                    "mcp_error",
+                    where="http_auth",
+                    path=path,
+                    source=mcp_source or "",
+                    error_code="UNAUTHORIZED",
+                    error_message=err_desc,
+                )
+            except Exception:
+                pass
             await send_json_status(
                 send,
                 401,
                 {
                     "error": "invalid_token",
-                    "error_description": "OAuth access token expired or invalid",
+                    "error_description": err_desc,
                     "code": "UNAUTHORIZED",
                 },
                 request_id=request_id,
@@ -412,6 +474,13 @@ class HttpMiddleware:
                     from authorization import reset_reauthorization_tracker
 
                     reset_reauthorization_tracker(reauth_token)
+                except Exception:
+                    pass
+            if request_id_token is not None:
+                try:
+                    from access_log import reset_request_id
+
+                    reset_request_id(request_id_token)
                 except Exception:
                     pass
             return
@@ -444,6 +513,19 @@ class HttpMiddleware:
 
         has_auth = bool(auth or creds or oauth_creds)
         if require_auth_enabled() and self._is_mcp_path(path) and not has_auth:
+            try:
+                from access_log import write_event
+
+                write_event(
+                    "mcp_error",
+                    where="http_auth",
+                    path=path,
+                    source=mcp_source or "",
+                    error_code="UNAUTHORIZED",
+                    error_message="Missing Authorization or credentials headers",
+                )
+            except Exception:
+                pass
             await send_json_status(
                 send,
                 401,
@@ -464,6 +546,13 @@ class HttpMiddleware:
                     reset_reauthorization_tracker(reauth_token)
                 except Exception:
                     pass
+            if request_id_token is not None:
+                try:
+                    from access_log import reset_request_id
+
+                    reset_request_id(request_id_token)
+                except Exception:
+                    pass
             return
 
         client_ip_token = None
@@ -475,6 +564,15 @@ class HttpMiddleware:
                 client_ip_token = set_request_client_ip(client_ip)
             except Exception:
                 client_ip_token = None
+
+        source_token = None
+        try:
+            from subpath_routing import set_request_mcp_source
+
+            source_token = set_request_mcp_source(mcp_source)
+        except Exception:
+            source_token = None
+
         try:
             await self.app(scope, receive, send)
         finally:
@@ -491,10 +589,24 @@ class HttpMiddleware:
                     reset_request_client_ip(client_ip_token)
                 except Exception:
                     pass
+            if source_token is not None:
+                try:
+                    from subpath_routing import reset_request_mcp_source
+
+                    reset_request_mcp_source(source_token)
+                except Exception:
+                    pass
             if reauth_token is not None:
                 try:
                     from authorization import reset_reauthorization_tracker
 
                     reset_reauthorization_tracker(reauth_token)
+                except Exception:
+                    pass
+            if request_id_token is not None:
+                try:
+                    from access_log import reset_request_id
+
+                    reset_request_id(request_id_token)
                 except Exception:
                     pass
