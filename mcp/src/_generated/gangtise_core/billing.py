@@ -39,6 +39,7 @@ ROW_BILLING_PRICES: Dict[str, float] = {
     "/security-clue/getList": 5,
     "/hot-topic/getList": 50,
     "/stock-summary/getList": 3,
+    "/expertIntel/getList": 20,
 }
 
 

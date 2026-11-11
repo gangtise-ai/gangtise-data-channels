@@ -9,10 +9,12 @@ if __name__ == "__main__" and not __package__:
     raise SystemExit(_mod.relaunch(__file__))
 
 import os
+import re
 import sys
 from datetime import datetime
 from io import TextIOWrapper
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import unquote
 
 import requests
 
@@ -24,18 +26,33 @@ from .utils import (
     get_authorization_token,
     get_headers_extra,
     WECHAT_GROUP_MSG_LIST_URL,
+    WECHAT_GROUP_MSG_DOWNLOAD_URL,
     WECHAT_GROUP_CHATROOM_URL,
     FILE_DEFAULT_LIMIT,
     format_response,
     check_version,
     is_code_arg,
+    parse_bool_flag,
 )
 from .gts_auth import authorized_request
 
-_CATEGORY_VALID = {"text", "image", "documents", "url"}
+_CATEGORY_VALID = {"text", "image", "document", "url", "audio", "video"}
+_CATEGORY_ALIASES = {
+    "documents": "document",
+    "doc": "document",
+    "docs": "document",
+    "文档": "document",
+    "图片": "image",
+    "文本": "text",
+    "链接": "url",
+    "音频": "audio",
+    "视频": "video",
+}
+_DOWNLOADABLE_CATEGORIES = {"document", "image", "audio", "video"}
 DEFAULT_ROOM_LIMIT = 50
 DEFAULT_MSG_LIMIT = FILE_DEFAULT_LIMIT.get("wechat_message", 500)
 IDS_FILE_HINT = "可从上述群列表复制群 ID，再通过 --groups 参数拉取群消息"
+DOWNLOAD_HINT = "文档/图片/音频/视频消息可用 -m download --messages <msgId> 或 -d true --messages <msgId> 下载"
 
 
 def _normalize_datetime_field(raw: Optional[str], *, end_of_day: bool) -> Optional[str]:
@@ -59,7 +76,11 @@ def _normalize_categories(items: Optional[List[str]]) -> Optional[List[str]]:
         return None
     out: List[str] = []
     for x in items:
-        v = str(x).strip().lower()
+        raw = str(x).strip()
+        if not raw:
+            continue
+        low = raw.lower()
+        v = _CATEGORY_ALIASES.get(raw) or _CATEGORY_ALIASES.get(low) or low
         if v in _CATEGORY_VALID and v not in out:
             out.append(v)
     return out or None
@@ -115,6 +136,12 @@ def _check_api_ok(body: Dict[str, Any]) -> bool:
     return (code in (200, "000000") or code == "0") and body.get("status") is True
 
 
+def _file_info_name(file_info: Any) -> str:
+    if not isinstance(file_info, dict):
+        return ""
+    return str(file_info.get("fileName") or file_info.get("filename") or "").strip()
+
+
 def _format_msg_rows(rows: List[dict]) -> List[dict]:
     out: List[dict] = []
     for row in rows:
@@ -140,6 +167,9 @@ def _format_msg_rows(rows: List[dict]) -> List[dict]:
         quote_id = str(quote.get("quoteMsgId") or "") if quote else ""
         quote_content = str(quote.get("quoteContent") or "") if quote else ""
         quote_url = str(quote.get("quoteUrl") or "") if quote else ""
+        quote_category = str(quote.get("quoteCategory") or "") if quote else ""
+        file_name = _file_info_name(row.get("fileInfo"))
+        quote_file_name = _file_info_name(quote.get("quoteFileInfo")) if quote else ""
 
         item = {
             "消息全文": content,
@@ -149,10 +179,13 @@ def _format_msg_rows(rows: List[dict]) -> List[dict]:
             "群ID": row.get("wechatGroupId") or "",
             "发言人": row.get("speakerName") or "",
             "消息类型": row.get("category") or "",
+            "文件名": file_name,
             "标签": tag_str,
             "引用消息ID": quote_id,
             "引用消息内容": quote_content,
             "引用消息链接": quote_url,
+            "引用消息类型": quote_category,
+            "引用文件名": quote_file_name,
             "类型": "群消息",
             "类型ID": str(row.get("msgId") or ""),
         }
@@ -313,6 +346,149 @@ def _auth_headers(authorization: Optional[str] = None) -> Tuple[Optional[dict], 
     headers = {"Authorization": auth}
     headers.update(get_headers_extra())
     return headers, None
+
+
+def _api_error_message(body: Dict[str, Any], fallback: str = "") -> str:
+    if isinstance(body, dict):
+        return str(body.get("msg") or body.get("message") or fallback)
+    return fallback
+
+
+def _parse_disposition_filename(disposition: Optional[str]) -> Optional[str]:
+    if not disposition:
+        return None
+    m = re.search(r"filename\*\s*=\s*(?:utf-8|UTF-8)''([^;]+)", disposition)
+    if not m:
+        m = re.search(r'filename\s*=\s*"?([^";]+)"?', disposition, flags=re.IGNORECASE)
+    return unquote(m.group(1).strip()) if m else None
+
+
+def _build_local_filename(title: str, server_filename: Optional[str], msg_id: str) -> str:
+    name = re.sub(r'[\\/:*?"<>|\r\n\t]+', "_", (title or "").strip()).strip(" .")
+    if not name:
+        name = re.sub(r'[\\/:*?"<>|\r\n\t]+', "_", (server_filename or "").strip()).strip(" .")
+    if not name:
+        name = f"wechat_msg_{msg_id}"
+    server_ext = os.path.splitext(server_filename or "")[1]
+    if server_ext and not os.path.splitext(name)[1]:
+        name += server_ext
+    return name
+
+
+def _download_one_message_file(
+    headers: dict,
+    msg_id: str,
+    title: str = "",
+    msg_time: str = "",
+) -> Tuple[Optional[dict], Optional[str]]:
+    mid = str(msg_id).strip()
+    if not mid or not mid.isdigit():
+        return None, f"msgId 非法：{msg_id}（须为非空数字字符串）"
+
+    try:
+        r = authorized_request(
+            "GET",
+            WECHAT_GROUP_MSG_DOWNLOAD_URL,
+            headers=headers,
+            params={"msgId": mid},
+            timeout=300,
+        )
+    except Exception as e:
+        return None, str(e)
+
+    if r.status_code != 200:
+        try:
+            body = r.json()
+            if isinstance(body, dict):
+                return None, _api_error_message(body, f"下载 HTTP {r.status_code}")
+        except Exception:
+            pass
+        return None, f"下载 HTTP {r.status_code}: {(r.text or '')[:300]}"
+
+    ctype_hdr = (r.headers.get("Content-Type") or "").lower()
+    if "json" in ctype_hdr and not (r.headers.get("Content-Disposition") or ""):
+        try:
+            body = r.json()
+            if isinstance(body, dict) and ("code" in body or "status" in body) and not _check_api_ok(body):
+                return None, _api_error_message(body, "下载失败")
+        except Exception:
+            pass
+
+    if not r.content:
+        return None, "下载内容为空"
+
+    server_name = _parse_disposition_filename(r.headers.get("Content-Disposition"))
+    filename = _build_local_filename(title, server_name, mid)
+    body_text = {"status": "success", "file_bytes": r.content, "filename": filename}
+    item = {
+        "标题": title or filename or mid,
+        "消息时间": msg_time or "",
+        "文件内容": body_text,
+        "消息ID": mid,
+        "类型": "群消息文件",
+        "类型ID": mid,
+    }
+    return item, None
+
+
+def wechat_message_download(
+    msg_ids: Optional[List[str]] = None,
+    output_dir: Optional[str] = None,
+    authorization: Optional[str] = None,
+    **kwargs,
+):
+    headers, err = _auth_headers(authorization)
+    if err:
+        return format_response({"state": "error", "message": err, "data": []}, "wechat_message", output_dir=output_dir)
+
+    ids = [str(x).strip() for x in (msg_ids or []) if str(x).strip()]
+    if not ids:
+        return format_response(
+            {
+                "state": "error",
+                "message": "下载模式须提供 --messages（群消息 msgId，逗号分隔）",
+                "data": [],
+            },
+            "wechat_message",
+            output_dir=output_dir,
+        )
+
+    downloaded: List[dict] = []
+    errors: List[str] = []
+    for mid in ids:
+        item, derr = _download_one_message_file(headers, mid)
+        if derr:
+            errors.append(f"{mid}: {derr}")
+            continue
+        if item:
+            downloaded.append(item)
+
+    if not downloaded:
+        return format_response(
+            {
+                "state": "error",
+                "message": "文件下载失败：" + ("；".join(errors) if errors else "未知错误"),
+                "data": [],
+            },
+            "wechat_message",
+            output_dir=output_dir,
+        )
+
+    parts = [
+        {
+            "data": downloaded,
+            "module": "wechat_message_file",
+            "type": "files",
+        }
+    ]
+    msg = f"已下载 {len(downloaded)} 个群消息文件"
+    extra = ("未成功：" + "；".join(errors)) if errors else ""
+    return format_response(
+        {"state": "success", "message": msg, "data": parts},
+        "wechat_message",
+        output_dir=output_dir,
+        additional_message=extra,
+    )
 
 
 def _exact_match_chatrooms(keyword: str, rows: List[dict]) -> List[dict]:
@@ -491,6 +667,13 @@ def wechat_message_get(
     msg = f"已获取{gid_hint}内 {len(aggregated)} 条群消息"
     if keyword:
         msg += f"（关键词：{keyword.strip()}）"
+    downloadable = [
+        r
+        for r in aggregated
+        if str(r.get("消息类型") or "").strip().lower() in _DOWNLOADABLE_CATEGORIES
+    ]
+    if downloadable:
+        msg += f"；其中 {len(downloadable)} 条可下载附件，{DOWNLOAD_HINT}"
     return format_response(
         {"state": "success", "message": msg, "data": parts},
         "wechat_message",
@@ -514,8 +697,10 @@ def wechat_message_finder(
     output_dir: Optional[str] = None,
     authorization: Optional[str] = None,
     mode: Optional[str] = None,
+    msg_ids: Optional[List[str]] = None,
+    download: bool = False,
 ):
-    """检索微信群列表；提供 wechat_group_id_list、mode=get 或消息筛选条件时拉取群消息。"""
+    """检索微信群列表；提供 wechat_group_id_list、mode=get 或消息筛选条件时拉取群消息；mode=download 或 -d 下载附件。"""
     room_limit = int(limit) if limit is not None else DEFAULT_ROOM_LIMIT
     msg_limit = int(limit) if limit is not None else DEFAULT_MSG_LIMIT
     common = dict(
@@ -529,6 +714,20 @@ def wechat_message_finder(
         output_dir=output_dir,
         authorization=authorization,
     )
+
+    resolved_msg_ids: Optional[List[str]] = None
+    if msg_ids:
+        if isinstance(msg_ids, str):
+            resolved_msg_ids = _parse_str_list(msg_ids)
+        else:
+            resolved_msg_ids = [str(x).strip() for x in msg_ids if str(x).strip()] or None
+
+    if mode == "download" or download:
+        return wechat_message_download(
+            msg_ids=resolved_msg_ids,
+            output_dir=output_dir,
+            authorization=authorization,
+        )
 
     group_ids: Optional[List[str]] = None
     if wechat_group_id_list:
@@ -587,15 +786,15 @@ def main():
         print("[WARNING] 检查 Gangtise private 版本失败\n")
 
     parser = argparse.ArgumentParser(
-        description="微信群消息：检索群 ID 或按群 ID/条件拉取消息（open-vault wechatgroupmsg）",
+        description="微信群消息：检索群 ID、拉取消息或下载附件（open-vault wechatgroupmsg）",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "-m",
         "--mode",
-        choices=["search", "get"],
+        choices=["search", "get", "download"],
         default="search",
-        help="search=查群 ID；get=拉群消息；提供 --groups 或 -m get 时进入 get",
+        help="search=查群 ID；get=拉群消息；download=按 msgId 下载附件；提供 --groups 或 -m get 时进入 get；-d/--messages 时进入 download",
     )
     parser.add_argument(
         "-n",
@@ -629,9 +828,23 @@ def main():
     parser.add_argument(
         "--categories",
         default=None,
-        help="消息类型：text,image,documents,url（get 模式）",
+        help="消息类型：text,image,document,url,audio,video（get 模式；documents 会兼容映射为 document）",
     )
     parser.add_argument("--tags", default=None, help="标签，逗号分隔或中文别名（get 模式）")
+    parser.add_argument(
+        "--messages",
+        default=None,
+        help="群消息 msgId，逗号分隔（download；须保持字符串，勿转 Number）",
+    )
+    parser.add_argument(
+        "-d",
+        "--download",
+        default=False,
+        type=parse_bool_flag,
+        nargs="?",
+        const=True,
+        help="下载附件；配合 --messages，等价于 -m download",
+    )
     parser.add_argument("-od", "--output-dir", default=None, help="结果保存目录路径（需 GTS_SAVE_FILE=True）")
 
     args = parser.parse_args()
@@ -641,6 +854,13 @@ def main():
     groups_arg: Optional[List[str]] = None
     if args.groups and str(args.groups).strip():
         groups_arg = _parse_str_list(args.groups)
+
+    mode = args.mode
+    download = bool(args.download)
+    # 提供 --messages，或显式 -m download / -d，进入下载
+    if (args.messages and str(args.messages).strip()) or download or mode == "download":
+        mode = "download"
+        download = True
 
     print(
         wechat_message_finder(
@@ -656,7 +876,9 @@ def main():
             tag_list=_parse_str_list(args.tags),
             limit=args.limit,
             output_dir=args.output_dir,
-            mode=args.mode,
+            mode=mode,
+            msg_ids=_parse_str_list(args.messages),
+            download=download,
         )
     )
 

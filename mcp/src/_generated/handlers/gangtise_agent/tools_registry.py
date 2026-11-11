@@ -3,6 +3,7 @@
 """Leaf tool handlers for this skill."""
 from .agent_api import (
     earnings_review,
+    expert_intel,
     hot_topic,
     investment_logic,
     management_sentiment,
@@ -27,4 +28,5 @@ TOOL_HANDLERS = {
     "hot_topic": hot_topic,
     "security_clue": security_clue,
     "management_sentiment": management_sentiment,
+    "expert_intel": expert_intel,
 }

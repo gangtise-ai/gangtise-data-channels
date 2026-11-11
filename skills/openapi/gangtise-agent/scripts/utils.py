@@ -55,10 +55,12 @@ GTS_SAVE_FILE = _env_truthy("GTS_SAVE_FILE", False)
 GTS_SAVE_EXTENSION = "md"
 
 GANGTISE_OPENAI_DOMAIN = gangtise_domain("GANGTISE_OPENAI_DOMAIN", "https://openapi.gangtise.com/application/open-ai")
+GANGTISE_INSIGHT_DOMAIN = gangtise_domain("GANGTISE_INSIGHT_DOMAIN", "https://openapi.gangtise.com/application/open-insight")
 GANGTISE_REFERENCE_DOMAIN = gangtise_domain("GANGTISE_REFERENCE_DOMAIN", "https://openapi.gangtise.com/application/open-reference")
 GANGTISE_AGENT_URL = GANGTISE_OPENAI_DOMAIN + "/agent"
 HOT_TOPIC_LIST_URL = GANGTISE_OPENAI_DOMAIN + "/hot-topic/getList"
 STOCK_SUMMARY_LIST_URL = GANGTISE_OPENAI_DOMAIN + "/stock-summary/getList"
+EXPERT_INTEL_LIST_URL = GANGTISE_INSIGHT_DOMAIN + "/expertIntel/getList"
 SECURITIES_SEARCH_URL = GANGTISE_REFERENCE_DOMAIN + "/securities/search"
 CONCEPT_SEARCH_URL = GANGTISE_REFERENCE_DOMAIN + "/concepts/search"
 AGENTS_CN_MAP = {
@@ -73,6 +75,7 @@ AGENTS_CN_MAP = {
     "hot-topic-list": "热点话题",
     "security-clue-list": "投研线索",
     "management-sentiment": "管理层情绪",
+    "expert-intel-list": "AI专家情报",
 }
 
 WORK_PATH = os.getenv("WORK_PATH", None)
@@ -185,6 +188,7 @@ _METHOD_NAME_CN_MAP = {
     "hot_topic_list": "热点话题",
     "security_clue_list": "投研线索",
     "management_sentiment": "管理层情绪",
+    "expert_intel": "AI专家情报",
     "agent": "Agent",
 }
 
@@ -345,7 +349,12 @@ def _render_agent_items(
     parts: List[str] = []
     for row in data_list:
         parts.append(f"### {_agent_item_heading(type_name, method_name, row)}")
-        if type_name in ("hot-topic-list", "security-clue-list", "management-sentiment") and row.get("markdown"):
+        if type_name in (
+            "hot-topic-list",
+            "security-clue-list",
+            "management-sentiment",
+            "expert-intel-list",
+        ) and row.get("markdown"):
             parts.append(str(row["markdown"]).strip())
             parts.append("---")
             continue
@@ -376,7 +385,7 @@ def remove_html_tags(text):
     clean = re.compile('<.*?>')
     return re.sub(clean, '', text)
 
-OPENAPI_SKILL_VERSION = "1.7.0"
+OPENAPI_SKILL_VERSION = "1.8.0"
 SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
 
 def check_version(large_version: bool = True):

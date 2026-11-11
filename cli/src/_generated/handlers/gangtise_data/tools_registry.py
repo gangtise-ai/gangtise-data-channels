@@ -1,9 +1,9 @@
 # GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-data/scripts/tools_registry.py
 # Regenerate: python3 scripts/generate.py
 """Leaf tool handlers for this skill."""
-from .block_constituents import block_constituents_data as block_constituents
 from .company_indicator import company_indicator_data as company_indicator
 from .concept import concept_data as concept
+from .constituents import constituents_data as constituents
 from .earning_forecast import earning_forecast_data as earning_forecast
 from .financial import financial_data as financial
 from .fund_flow import fund_flow_data as fund_flow
@@ -15,7 +15,8 @@ from .shareholder import shareholder_data as shareholder
 from .valuation import valuation_data as valuation
 
 TOOL_HANDLERS = {
-    "block_constituents": block_constituents,
+    "constituents": constituents,
+    "block_constituents": constituents,  # 兼容旧名
     "company_indicator": company_indicator,
     "concept": concept,
     "earning_forecast": earning_forecast,

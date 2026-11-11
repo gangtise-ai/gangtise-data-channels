@@ -63,6 +63,7 @@ GTS_SAVE_EXTENSION = os.getenv("GTS_SAVE_EXTENSION", "md")
 
 GANGTISE_VAULT_DOMAIN = gangtise_domain("GANGTISE_VAULT_DOMAIN", "https://openapi.gangtise.com/application/open-vault")
 WECHAT_GROUP_MSG_LIST_URL = GANGTISE_VAULT_DOMAIN + "/wechatgroupmsg/list"
+WECHAT_GROUP_MSG_DOWNLOAD_URL = GANGTISE_VAULT_DOMAIN + "/wechatgroupmsg/download/file"
 WECHAT_GROUP_CHATROOM_URL = GANGTISE_VAULT_DOMAIN + "/wechatgroupmsg/chatroomId"
 GET_POOL_LIST_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/getPoolList"
 GET_STOCK_LIST_URL = GANGTISE_VAULT_DOMAIN + "/stock-pool/getStockList"
@@ -332,6 +333,7 @@ def format_response(
         "stockpool_notes": "个股笔记",
         "wechat_chatroom": "微信群列表",
         "wechat_message": "群消息",
+        "wechat_message_file": "群消息文件",
         "private_meeting_list": "会议列表",
         "private_meeting_content": "会议内容",
         "private_record_list": "录音列表",
@@ -437,6 +439,22 @@ def is_code_arg(raw: str) -> bool:
     s = (raw or "").strip()
     return bool(s) and re.fullmatch(r"[a-zA-Z,，0-9]+", s) is not None
 
+
+_TRUE_WORDS = {"1", "true", "yes", "y", "on", "是"}
+_FALSE_WORDS = {"0", "false", "no", "n", "off", "否"}
+
+
+def parse_bool_flag(value) -> bool:
+    """argparse 布尔开关：`-d` 视为 true，也接受 `-d true/false`。"""
+    text = str(value).strip().lower()
+    if text in _TRUE_WORDS:
+        return True
+    if text in _FALSE_WORDS:
+        return False
+    import argparse
+
+    raise argparse.ArgumentTypeError(f"无效布尔值: {value}（可用 true / false）")
+
 def load_pool_ids_from_file(path: str) -> List[str]:
     full_path = path
     if not os.path.exists(full_path):
@@ -496,7 +514,7 @@ def match_best(item: str, candidates, threshold: float = 0.6):
     return None
 
 PRIVATE_SKILL_VERSION = "1.0.0"
-OPENAPI_SKILL_VERSION = "1.7.0"
+OPENAPI_SKILL_VERSION = "1.8.0"
 SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
 
 def check_version(large_version: bool = True):

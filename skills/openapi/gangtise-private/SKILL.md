@@ -1,7 +1,7 @@
 ---
 name: gangtise-private
-description: 通过 Gangtise Open API 读取终端个人私有数据（个人自选股与所属租户股票池、个股投资笔记、微信群消息、我的会议、录音速记、AI云盘等），结果可落盘 CSV/md，便于衔接 gangtise-data、gangtise-file 等技能。仅可访问当前授权用户有权查看的数据。
-version: 1.8.0
+description: 通过 Gangtise Open API 读取终端个人私有数据（个人自选股与所属租户股票池、个股投资笔记、微信群消息及附件下载、我的会议、录音速记、AI云盘等），结果可落盘 CSV/md，便于衔接 gangtise-data、gangtise-file 等技能。仅可访问当前授权用户有权查看的数据。
+version: 1.9.0
 author: Gangtise
 metadata:
   category: openapi
@@ -16,7 +16,7 @@ metadata:
 | 脚本 | 能力 |
 |------|------|
 | `scripts/stockpool.py` | 个人自选股与所属租户股票池：列表 + 池内证券（`search` / `get`，`--space-type` 1/2），创建/重命名/删除池、添加/移除证券（仅个人池），以及个股笔记（`search_note` / `add_note` / `update_note` / `delete_note`） |
-| `scripts/wechat_message.py` | 微信群消息：`search` / `get` |
+| `scripts/wechat_message.py` | 微信群消息：`search` / `get` / `download`（按 msgId 下载文档/图片/音频/视频） |
 | `scripts/private_meeting.py` | 我的会议：列表 + 下载 ASR/速记，`search` / `get` |
 | `scripts/private_record.py` | 录音速记：列表 + 下载原始/ASR/速记，`search` / `get` |
 | `scripts/private_cloud.py` | AI 云盘：列表 + 下载（`search` / `get`），浏览文件夹、上传、新建文件夹、重命名、移动、复制、删除（`folder_list` / `upload` / `create_folder` / `rename` / `move_file` / `move_folder` / `copy` / `delete_file` / `delete_folder`） |
@@ -48,7 +48,7 @@ metadata:
 | 脚本 | 自动 get 条件 |
 |------|---------------|
 | stockpool | `--pool`、`--pool-file`、`--all` |
-| wechat_message | `--groups` 或 `-m get` |
+| wechat_message | `--groups` 或 `-m get`；`--messages` / `-d` / `-m download` 进入下载 |
 | private_meeting | `--conference`、`--conference-file` |
 | private_record | `--record`、`--record-file` |
 | private_cloud | `--files`、`--files-file` |
@@ -113,7 +113,16 @@ python3 scripts/wechat_message.py -m get -k "半导体" -st 2026-03-01 -et 2026-
 python3 scripts/wechat_message.py --groups YOUR_GROUP_ID -k "AI应用" -st 2026-03-01 -et 2026-03-31 -l 100
 ```
 
-落盘（可选）：`export GTS_SAVE_FILE=True` 后，结果写入 `workspace/gangtise/wechat_message/`。
+```bash
+python3 scripts/wechat_message.py -m get --categories document,image,audio,video -l 50
+```
+
+```bash
+python3 scripts/wechat_message.py -d true --messages 4784255865508301077
+python3 scripts/wechat_message.py -m download --messages 4784255865508301077,4784255865508301078
+```
+
+落盘（可选）：`export GTS_SAVE_FILE=True` 后，结果写入 `workspace/gangtise/wechat_message/`；下载附件会直接写入文件。
 
 详见 [微信消息调用指导](./references/wechat_message.md)。
 

@@ -1,5 +1,5 @@
 {
-  "summary": "通过 Gangtise Agent OpenAPI 拉取一页通、投资逻辑、同业对比、绩点评、主题跟踪、调研提纲、热点话题、管理层情绪等 Markdown 投研文本。",
+  "summary": "通过 Gangtise Agent OpenAPI 拉取一页通、投资逻辑、同业对比、绩点评、主题跟踪、调研提纲、热点话题、管理层情绪、AI专家情报等 Markdown 投研文本。",
   "installation_instructions": "通过 https://gts-download.obs.cn-east-3.myhuaweicloud.com/skills/gangtise-agent.zip 下载解压，并复制到 skills/ 目录下；需配置 GTS_ACCESS_KEY / GTS_SECRET_KEY。",
   "keywords": [
     "一页通",
@@ -10,6 +10,8 @@
     "调研提纲",
     "热点话题",
     "管理层情绪",
+    "AI专家情报",
+    "专家情报",
     "gangtise agent"
   ],
   "example_prompts": [
@@ -23,7 +25,8 @@
     "3 月 22 到 27 这几天市场热点有哪些？最好带上相关标的和精读。",
     "茅台、比亚迪最近研报、纪要、公告、观点各有什么新线索？",
     "按新能源行业代码，今年一季度会议和观点类线索汇总一下。",
-    "国瓷材料最近一场业绩会，管理层情绪指标和结论怎么样？回避了哪些问题？"
+    "国瓷材料最近一场业绩会，管理层情绪指标和结论怎么样？回避了哪些问题？",
+    "最近几天特斯拉机器人相关的 AI 专家情报有哪些？浙江荣泰有没有景气上行的内容？"
   ],
   "when_not_to_use": []
 }

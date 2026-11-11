@@ -1,5 +1,5 @@
 {
   "name": "gangtise-private",
   "summary": "读取 Gangtise 终端个人私有数据：个人自选股与所属租户股票池、微信群消息、我的会议、录音速记、AI 云盘等，结果可落盘 CSV/Markdown。",
-  "description": "通过 Gangtise Open API 读取终端个人私有数据（个人自选股与所属租户股票池、个股投资笔记、微信群消息、我的会议、录音速记、AI云盘等），结果可落盘 CSV/md，便于衔接 gangtise-data、gangtise-file 等技能。仅可访问当前授权用户有权查看的数据。"
+  "description": "通过 Gangtise Open API 读取终端个人私有数据（个人自选股与所属租户股票池、个股投资笔记、微信群消息及附件下载、我的会议、录音速记、AI云盘等），结果可落盘 CSV/md，便于衔接 gangtise-data、gangtise-file 等技能。仅可访问当前授权用户有权查看的数据。"
 }

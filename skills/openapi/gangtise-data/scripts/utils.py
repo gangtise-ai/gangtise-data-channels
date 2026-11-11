@@ -70,6 +70,7 @@ QUOTE_URL = GANGTISE_QUOTE_DOMAIN + "/kline/daily"
 FUND_FLOW_DAILY_URL = GANGTISE_QUOTE_DOMAIN + "/fund-flow/daily"
 FUND_FLOW_SECTOR_DAILY_URL = GANGTISE_QUOTE_DOMAIN + "/fund-flow/sector-daily"
 QUOTE_INDEX_DAILY_URL = GANGTISE_QUOTE_DOMAIN + "/index/kline/daily"
+INDEX_CONSTITUENT_WEIGHT_URL = GANGTISE_QUOTE_DOMAIN + "/index/constituent-weight"
 QUOTE_HK_URL = GANGTISE_QUOTE_DOMAIN + "/kline-hk/daily"
 QUOTE_US_DAILY_URL = GANGTISE_QUOTE_DOMAIN + "/kline-us/daily"
 QUOTE_MINUTE_URL = GANGTISE_QUOTE_DOMAIN + "/kline/minute"
@@ -243,6 +244,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
     method_name_map = {
         "block_component": "板块成分信息",
         "block_constituents": "板块成分股",
+        "constituents": "成分股",
         "index": "指数信息",
         "financial": "财务数据",
         "earning_forecast": "盈利预测数据",
@@ -1947,7 +1949,7 @@ SECTOR_FUND_FLOW_CN = {
     "sectorTotalOutflow": "板块全单流出金额（单位：元）",
 }
 
-OPENAPI_SKILL_VERSION = "1.7.0"
+OPENAPI_SKILL_VERSION = "1.8.0"
 SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
 
 def check_version(large_version: bool = True):

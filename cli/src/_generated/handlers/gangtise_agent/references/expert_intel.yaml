@@ -1,0 +1,44 @@
+# GENERATED FILE. Do not edit. Source: skills/openapi/gangtise-agent/references/expert_intel.yaml
+# Regenerate: python3 scripts/generate.py
+name: expert_intel
+title: AI Expert Intel
+description: 获取 AI 从专家会议、会议纪要等一手信息中提炼的情报列表，支持按证券、研究方向、主题概念、内容标签、关键词和发布时间筛选。按 20 积分/条计费。
+parameters:
+  page_from:
+    type: integer
+    description: 分页起始偏移，默认 0
+  page_size:
+    type: integer
+    description: 分页条数，默认 20，最大 50
+  start_time:
+    type: string
+    description: 开始时间，支持 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss
+  end_time:
+    type: string
+    description: 结束时间，支持 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss
+  search_type:
+    type: integer
+    description: 搜索类型：1 标题搜索，2 全文搜索（默认）
+  keyword:
+    type: string
+    description: 搜索关键词
+  securities:
+    type: array
+    description: 证券名称或代码，逗号分隔
+    items:
+      type: string
+  research_area_list:
+    type: array
+    description: 研究方向（行业）ID 列表；可通过常量接口 citicIndustry/swIndustry/gangtiseIndustry 获取
+    items:
+      type: string
+  concept_list:
+    type: array
+    description: 主题概念 ID 或名称列表；名称会自动解析为 ID
+    items:
+      type: string
+  tag_list:
+    type: array
+    description: 内容标签纯文本，如 景气上行、超预期、重大催化
+    items:
+      type: string

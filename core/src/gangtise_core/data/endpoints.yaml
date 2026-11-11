@@ -337,6 +337,13 @@ vault.record.download:
   kind: download
   retry: no-replay
   tool: private_record
+vault.wechatgroupmsg.download:
+  method: GET
+  path: /wechatgroupmsg/download/file
+  kind: download
+  retry: no-replay
+  tool: wechat_message
+  mode: download
 vault.drive.list:
   method: POST
   path: /drive/getList

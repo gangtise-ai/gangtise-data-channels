@@ -11,6 +11,7 @@ if __name__ == "__main__" and not __package__:
 from typing import List, Optional
 
 from .agents import openapi_agent
+from .expert_intel import expert_intel
 from .hot_topic import run_hot_topic_list as hot_topic
 from .management_sentiment import management_sentiment
 from .security_clue import run_security_clue_list as security_clue
@@ -132,4 +133,5 @@ __all__ = [
     "hot_topic",
     "security_clue",
     "management_sentiment",
+    "expert_intel",
 ]

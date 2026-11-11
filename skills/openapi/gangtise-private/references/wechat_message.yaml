@@ -1,13 +1,14 @@
 name: wechat_message
 title: Wechat Message
-description: 检索已绑定微信群列表，或拉取群聊消息。提供 wechat_group_id_list 时拉取指定群消息；未传 room_name 但传了时间/行业/类别/标签筛选时拉取全部可访问群的消息。需已激活群消息助理。
+description: 检索已绑定微信群列表、拉取群聊消息，或按 msgId 下载文档/图片/音频/视频附件。提供 wechat_group_id_list 时拉取指定群消息；未传 room_name 但传了时间/行业/类别/标签筛选时拉取全部可访问群的消息。mode=download 或 -d/--messages 下载附件。需已激活群消息助理。
 parameters:
   mode:
     type: string
-    description: search 检索群列表；get 拉取群消息（不传群 ID 时为全部可访问群）。不传时自动判断
+    description: search 检索群列表；get 拉取群消息；download 按 msgId 下载附件。不传时自动判断
     enum:
       - search
       - get
+      - download
   room_name:
     type: string
     description: 群名称，逗号分隔（search → roomName）
@@ -38,7 +39,7 @@ parameters:
       type: string
   category_list:
     type: array
-    description: text,image,documents,url（get）
+    description: text,image,document,url,audio,video（get；旧值 documents 兼容映射为 document）
     items:
       type: string
   tag_list:
@@ -46,6 +47,14 @@ parameters:
     description: 标签代码或中文（如 路演→roadShow）（get）
     items:
       type: string
+  msg_ids:
+    type: array
+    description: 群消息 msgId 列表（download；须按字符串传递）
+    items:
+      type: string
+  download:
+    type: boolean
+    description: 是否下载附件；配合 msg_ids，等价于 mode=download
   limit:
     type: integer
     description: search：最多返回群数（默认 50）；get：最多消息条数（默认 500）

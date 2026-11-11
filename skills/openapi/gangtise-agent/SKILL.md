@@ -1,7 +1,7 @@
 ---
 name: gangtise-agent
-description: 通过 Gangtise Agent OpenAPI 统一拉取 Markdown 投研文本。 各 Agent 能力概览：one-pager（公司一页通，单票核心要素与结论浓缩）； investment-logic（投资逻辑，主线叙事与关键假设）； peer-comparison（同业对比，竞争格局与可比公司差异）； earnings-review（业绩点评，财报期业绩解读；需 getId 后轮询 getContent，最长约 600s）； viewpoint-debate（观点 PK，对给定观点的正反辨析与论据组织；同样异步轮询）； theme-tracking（主题跟踪，晨报/晚报式产业链与主题脉络）； research-outline（调研提纲，公司调研问题与访谈框架）； stock-one-line-summary（个股一句话总结，A 股/港股个股批量最新一句话投研摘要）； hot-topic-list（热点话题报告列表，按日期与报告类型分页拉取结构化热点，输出为多级 Markdown；核心标的为表格）； security-clue-list（投研线索列表，按证券/行业+时间范围提取研报、电话会议、公告、观点等结构化线索，输出为 Markdown 表格）； management-sentiment（公司管理层情绪，-t 切换指标/结论/问答明细，输出为组装后的 Markdown）。 返回多为可直接引用的结论文本，适合纪要、速览、投研助理与 Agent 编排中的事实与观点补充。注意不要只调用gangtise-agent，这些投研文本是定期更新的，时效性不足，建议额外调用其他skills进行补充。
-version: 1.7.0
+description: 通过 Gangtise Agent OpenAPI 统一拉取 Markdown 投研文本。 各 Agent 能力概览：one-pager（公司一页通，单票核心要素与结论浓缩）； investment-logic（投资逻辑，主线叙事与关键假设）； peer-comparison（同业对比，竞争格局与可比公司差异）； earnings-review（业绩点评，财报期业绩解读；需 getId 后轮询 getContent，最长约 600s）； viewpoint-debate（观点 PK，对给定观点的正反辨析与论据组织；同样异步轮询）； theme-tracking（主题跟踪，晨报/晚报式产业链与主题脉络）； research-outline（调研提纲，公司调研问题与访谈框架）； stock-one-line-summary（个股一句话总结，A 股/港股个股批量最新一句话投研摘要）； hot-topic-list（热点话题报告列表，按日期与报告类型分页拉取结构化热点，输出为多级 Markdown；核心标的为表格）； security-clue-list（投研线索列表，按证券/行业+时间范围提取研报、电话会议、公告、观点等结构化线索，输出为 Markdown 表格）； management-sentiment（公司管理层情绪，-t 切换指标/结论/问答明细，输出为组装后的 Markdown）； expert-intel（AI专家情报，从专家会议/纪要提炼的个股情报列表，支持证券/行业/主题/标签/关键词/时间筛选）。 返回多为可直接引用的结论文本，适合纪要、速览、投研助理与 Agent 编排中的事实与观点补充。注意不要只调用gangtise-agent，这些投研文本是定期更新的，时效性不足，建议额外调用其他skills进行补充。
+version: 1.8.0
 author: Gangtise
 metadata:
   category: openapi
@@ -13,7 +13,7 @@ metadata:
 
 ## 概览
 
-本技能通过 `scripts/agents.py` 调用通用 Agent 接口；`hot-topic-list`、`security-clue-list` 与 `management-sentiment` 为独立脚本调用（参数差异较大）。
+本技能通过 `scripts/agents.py` 调用通用 Agent 接口；`hot-topic-list`、`security-clue-list`、`management-sentiment` 与 `expert-intel` 为独立脚本调用（参数差异较大）。
 
 支持接口：
 
@@ -28,6 +28,7 @@ metadata:
 - `hot-topic-list`：热点话题报告（早报/午报/盘中快报/晚报等，分页与多维筛选，结构化话题与可选标的/精读）
 - `security-clue-list`：投研线索列表（按证券/行业查询，支持时间与来源筛选，分页最大 500）
 - `management-sentiment`：公司管理层情绪（`-t indicator` 指标、`conclusion` 结论、`detail` 明细；指标与结论按证券/时间分页，明细按来源会议取逐条问答）
+- `expert-intel`：AI专家情报（专家会议/纪要提炼情报列表，按证券/研究方向/主题/标签/关键词/时间筛选，分页最大 50，20 积分/条）
 
 整体长度是可控的，调用时请不要使用 `| head -N`，输出文件地址一般在末尾。
 
@@ -40,6 +41,8 @@ metadata:
 `scripts/security_clue.py`（仅 `security-clue-list`）
 
 `scripts/management_sentiment.py`（公司管理层情绪：指标 / 结论 / 明细）
+
+`scripts/expert_intel.py`（AI专家情报列表）
 
 ## 参数说明
 
@@ -163,4 +166,28 @@ python3 scripts/management_sentiment.py -t conclusion --securities 300285.SZ,688
 
 ```bash
 python3 scripts/management_sentiment.py -t detail --source-type conference --source-id 554030
+```
+
+### `scripts/expert_intel.py`
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| `--page-from` | 否 | 分页起始偏移，默认 `0`。 |
+| `--page-size` | 否 | 分页条数，默认 `20`，最大 `50`。 |
+| `-st` / `--start-time` | 否 | 开始时间，`yyyy-MM-dd` 或 `yyyy-MM-dd HH:mm:ss`。 |
+| `-et` / `--end-time` | 否 | 结束时间，格式同上。 |
+| `--search-type` | 否 | `1` 标题搜索 / `2` 全文搜索（默认）。 |
+| `-k` / `--keyword` | 否 | 搜索关键词。 |
+| `--securities` | 否 | 证券名称或代码，逗号分隔。 |
+| `--research-areas` | 否 | 研究方向（行业）ID，逗号分隔。 |
+| `--concepts` | 否 | 主题概念 ID 或名称，逗号分隔。 |
+| `--tags` | 否 | 内容标签纯文本，逗号分隔（如 `景气上行,超预期`）。 |
+| `-od` / `--output-dir` | 否 | 结果保存目录路径。 |
+
+```bash
+python3 scripts/expert_intel.py --securities 浙江荣泰 -st 2026-10-20 -et 2026-10-23 --concepts 特斯拉机器人 --tags 景气上行,超预期 -k 特斯拉
+```
+
+```bash
+python3 scripts/expert_intel.py --securities 603119.SH,000700.SZ --page-size 20 --search-type 2
 ```

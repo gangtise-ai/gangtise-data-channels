@@ -9,7 +9,7 @@ Pull quotes, financials, valuation, consensus, and industry data for A-shares, H
 - Daily bars, minute bars, real-time snapshots, or A-share fund flows
 - The three financial statements, business mix, shareholder structure, and consensus estimates
 - Valuation history and percentiles, to judge where the current multiple sits
-- Macro, industry, and product indicator series (auto sales, commodity prices), plus themes and index constituents
+- Macro, industry, and product indicator series (auto sales, commodity prices), plus themes, sector constituents, and index constituent weights
 
 ## How to use
 
@@ -17,6 +17,7 @@ Pull quotes, financials, valuation, consensus, and industry data for A-shares, H
 - "CATL PE, PB, and historical percentiles over the past five years"
 - "Kweichow Moutai revenue mix by product, and broker consensus"
 - "Profile and constituents of the low-altitude economy theme"
+- "CSI 300 constituents and weights on a given trade date"
 
 ## Output
 

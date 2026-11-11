@@ -62,6 +62,9 @@ RUN set -eux; \
     mkdir -p /opt/data /opt/data/logs /opt/mcp; \
     test -d /app/mcp/src/_generated/gangtise_core; \
     cp /app/mcp/tool_url_deps.json /opt/mcp/tool_url_deps.json; \
+    # 以已有镜像为 BASE 重建时，必须清空旧 target，否则 pip --target 不会覆盖
+    rm -rf /opt/mcp/src; \
+    mkdir -p /opt/mcp/src; \
     pip install --upgrade pip ${PIP_OPTS}; \
     pip install ${PIP_OPTS} \
         "mcp>=1.0.0,<2" \

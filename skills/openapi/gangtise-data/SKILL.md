@@ -1,7 +1,7 @@
 ---
 name: gangtise-data
-description: 通过 Gangtise 金融 Open API 拉取结构化量化数据，覆盖：行情（日K/分钟K/实时快照，A股/港股/美股及交易所/概念/行业指数）、A股个股与板块日资金流向、估值分位、财务三大报表（含发债公司三表）、主营构成、股东结构、盈利预测（券商一致预期）、行业指标时序（宏观/行业/产品）、公司指标（EDE，A股/港股/美股/债券/基金）、题材指数画像与成分股、板块成分股；证券解析（security）已嵌入各数据脚本，可按证券名称、简称、拼音或代码指代标的，更推荐名称查询。当用户需要可落盘的表格化行情与基本面数据，或题材 Markdown 画像时使用。
-version: 1.7.0
+description: 通过 Gangtise 金融 Open API 拉取结构化量化数据，覆盖：行情（日K/分钟K/实时快照，A股/港股/美股及交易所/概念/行业指数）、A股个股与板块日资金流向、估值分位、财务三大报表（含发债公司三表）、主营构成、股东结构、盈利预测（券商一致预期）、行业指标时序（宏观/行业/产品）、公司指标（EDE，A股/港股/美股/债券/基金）、题材指数画像与成分股、板块成分股与指数成分股权重；证券解析（security）已嵌入各数据脚本，可按证券名称、简称、拼音或代码指代标的，更推荐名称查询。当用户需要可落盘的表格化行情与基本面数据，或题材 Markdown 画像时使用。
+version: 1.8.0
 author: Gangtise
 metadata:
   category: openapi
@@ -29,7 +29,7 @@ metadata:
 - **行业指标**（EDB 检索 + 时序；覆盖宏观、行业以及产品数据；注意比亚迪销量这样的产品数据仅存在于行业指标接口；）：`scripts/industry_indicator.py`
 - **公司指标**（EDE 检索 + 时序/截面，A/港/美股、债券与基金；相较于其他脚本，适合取到公司的单个指标或者不同方面的指标，覆盖行情、基本面、信息属性等）：`scripts/company_indicator.py`
 - **题材指数**（基本信息 + 成分股，Markdown 输出；`--type info|securities|all`）：`scripts/concept.py`
-- **板块成分股**（板块 ID 搜索 + 成分股列表，CSV 输出）：`scripts/block_constituents.py`
+- **成分股**（板块成分股 + 指数成分股权重，CSV 输出）：`scripts/constituents.py`（旧入口 `block_constituents.py` 仍可用）
 - **证券解析 / 代码搜索**（独立脚本 `scripts/security.py`，逻辑已嵌入上文各数据脚本）
 
 使用场景：
@@ -269,23 +269,26 @@ python3 scripts/concept.py -c 机器人,固态电池 --type securities
 
 详见 [题材指数调用指导](./references/concept.md)。
 
-### 11. 板块成分股（板块 ID 搜索 + 成分股）
+### 11. 成分股（板块成分股 + 指数成分股权重）
 
-基于 open **`sectors/search`** 与 **`sectors/constituents`** 接口；`-k` 按关键词搜索板块，唯一高置信命中时自动拉取成分股；否则多命中时仅打印候选供确认，请改用 `-s` 指定 sectorId。输出 **CSV**。
+脚本 **`scripts/constituents.py`**，`-m sector|index`：
+
+- **sector**（默认）：open **`sectors/search`** + **`sectors/constituents`**；`-k` 搜索板块，唯一高置信命中时自动拉成分股，多命中请改用 `-s`。
+- **index**：open **`index/constituent-weight`**；`--indexes` + `-td` 按交易日查宽基指数全部成分股及权重，不分页。
 
 ```bash
-python3 "scripts/block_constituents.py" -k 机器人
+python3 scripts/constituents.py -k 机器人
 ```
 
 ```bash
-python3 "scripts/block_constituents.py" -s 121000130
+python3 scripts/constituents.py -s 121000130
 ```
 
 ```bash
-python3 "scripts/block_constituents.py" -k 半导体 -t 10
+python3 scripts/constituents.py -m index --indexes 000300.SH,沪深300 -td 2026-06-30
 ```
 
-详见 [板块成分股调用指导](./references/block_constituents.md)。
+详见 [成分股调用指导](./references/constituents.md)。
 
 ### 12. 证券解析与单独搜索（`security.py`）
 

@@ -629,6 +629,7 @@ ENDPOINT_POLICIES: Dict[str, Dict[str, Any]] = {
     "/my-conference/download/file": {"retry": "no-replay"},
     "/record/download/file": {"retry": "no-replay"},
     "/drive/download/file": {"retry": "no-replay"},
+    "/wechatgroupmsg/download/file": {"retry": "no-replay"},
     "/drive/uploadFile": {"retry": "no-replay"},
     "/drive/createFolder": {"retry": "no-replay"},
     "/drive/moveFile": {"item_failures": True},
@@ -819,6 +820,7 @@ ROW_BILLING_PRICES: Dict[str, float] = {
     "/security-clue/getList": 5,
     "/hot-topic/getList": 50,
     "/stock-summary/getList": 3,
+    "/expertIntel/getList": 20,
 }
 
 

@@ -7,7 +7,7 @@ Read and manage data you can access in the Gangtise terminal: personal and tenan
 ## When to use
 
 - Pull a personal or tenant stock pool and continue into quotes, research, and other analysis
-- Review research discussion and leads in message groups
+- Review research discussion and leads in message groups, and download document/image/audio/video attachments
 - Find meetings you attended, plus notes and transcripts of recordings
 - Find, upload, and organize files in the AI cloud drive
 
