@@ -31,9 +31,7 @@ from .utils import (  # noqa: E402
     QA_QUESTION_CATEGORY_LABEL,
     FILE_DEFAULT_LIMIT,
     format_response,
-    match_best,
-    check_version,
-)
+    match_best)
 from .security import batch_security_search  # noqa: E402
 from gangtise_core.auth import authorized_request, get_authorization_headers
 
@@ -375,7 +373,6 @@ def main():
     )
 
     args = parser.parse_args()
-    check_version()
 
     securities = _parse_str_list(args.securities)
     source_list = _parse_str_list(args.source)

@@ -18,7 +18,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 import pandas as pd
 import requests
 
-
 from .gts_auth import (
     append_consumed_points_to_saved_file,
     apply_consumed_points,
@@ -30,7 +29,6 @@ from .gts_auth import (
 )
 from .gts_runtime import ApiError, failure_result, request_json, success_result
 
-
 def __getattr__(name):
     if name == "GTS_AUTHORIZATION":
         return get_authorization_token()
@@ -38,16 +36,13 @@ def __getattr__(name):
         return get_headers_extra()
     raise AttributeError(name)
 
-
 DEPLOY_ENV = os.getenv("DEPLOY_ENV", "local")
-
 
 def _env_truthy(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
     if raw is None:
         return default
     return str(raw).strip().lower() in ("1", "true", "yes", "on")
-
 
 GTS_SAVE_FILE = _env_truthy("GTS_SAVE_FILE", False)
 GTS_SAVE_EXTENSION = os.getenv("GTS_SAVE_EXTENSION", "md")
@@ -88,7 +83,6 @@ US_FINANCIAL_REPORT_CASH_FLOW_URL = GANGTISE_FUNDAMENTAL_DOMAIN + "/financial-re
 
 WORK_PATH = os.getenv("WORK_PATH", None)
 
-
 def _find_openclaw_root() -> str:
     """向上遍历目录直到找到 .openclaw / .agent / workspace / skills。"""
     path = os.path.abspath(os.path.dirname(__file__))
@@ -104,7 +98,6 @@ def _find_openclaw_root() -> str:
             return os.path.abspath(os.path.dirname(cur))
         cur = os.path.dirname(cur)
     return os.path.abspath(os.getcwd())
-
 
 def resolve_gangtise_workspace_path() -> str:
     if WORK_PATH:
@@ -122,9 +115,7 @@ def resolve_gangtise_workspace_path() -> str:
     os.makedirs(os.path.join(base, ".usage"), exist_ok=True)
     return base
 
-
 gangtise_workspace_path = resolve_gangtise_workspace_path()
-
 
 def _unique_result_path(process_dir: str, module_name: str, extension: str) -> str:
     """日期、微秒和随机后缀独占创建，避免只靠时分秒重名。"""
@@ -146,7 +137,6 @@ def _unique_result_path(process_dir: str, module_name: str, extension: str) -> s
             return path
     raise RuntimeError("结果文件无法写入，请稍后重试")
 
-
 def alloc_result_path(
     method_name: str,
     module_name: str,
@@ -159,11 +149,9 @@ def alloc_result_path(
     except RuntimeError as exc:
         return None, f"错误信息：{exc}"
 
-
 def remove_html_tags(text):
     clean = re.compile("<.*?>")
     return re.sub(clean, "", text)
-
 
 def _md_cell(value: Any, max_cell_length: Optional[int]) -> str:
     if value is None or (isinstance(value, float) and pd.isna(value)):
@@ -172,7 +160,6 @@ def _md_cell(value: Any, max_cell_length: Optional[int]) -> str:
     if max_cell_length and len(text) > max_cell_length:
         return text[:max_cell_length] + "..."
     return text
-
 
 def data_to_md(data: pd.DataFrame, range: List[int] = None, max_cell_length: int = None):
     content = "| " + " | ".join(data.columns) + " |\n"
@@ -186,7 +173,6 @@ def data_to_md(data: pd.DataFrame, range: List[int] = None, max_cell_length: int
             continue
         content += "| " + " | ".join(_md_cell(row[key], max_cell_length) for key in row.keys()) + " |\n"
     return content.strip()
-
 
 METHOD_NAME_MAP = {
     "security": "债券检索",
@@ -206,7 +192,6 @@ METHOD_NAME_MAP = {
 }
 
 PREVIEW_MAX_CELL_LENGTH = 60
-
 
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None):
     points_note = apply_consumed_points(response)
@@ -253,16 +238,13 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
         return_message = return_message[:-6].strip()
     return success_result(return_message, response)
 
-
 def error_response(method_name: str, message: str, output_dir: Optional[str] = None):
     return format_response({"state": "error", "message": message, "data": []}, method_name, output_dir=output_dir)
-
 
 def build_headers() -> Optional[dict]:
     if not get_authorization_token():
         return None
     return get_authorization_headers()
-
 
 def parse_str_list(raw) -> List[str]:
     """将逗号分隔字符串或列表统一解析为非空字符串列表（MCP/CLI 均可传入）。"""
@@ -275,9 +257,7 @@ def parse_str_list(raw) -> List[str]:
         return []
     return [x.strip() for x in text.replace("，", ",").replace("、", ",").split(",") if x.strip()]
 
-
 _SECURITY_FILE_COLUMNS = ("security_code", "code", "代码", "债券代码", "security_abbr", "债券简称")
-
 
 def load_securities_from_file(path: str) -> List[str]:
     """从 CSV 读取债券列表。须为已存在的 ``.csv``；列优先 ``security_code`` / ``code`` / ``代码`` / ``债券代码`` / ``security_abbr`` / ``债券简称``。"""
@@ -294,7 +274,6 @@ def load_securities_from_file(path: str) -> List[str]:
         raise ValueError(f"证券文件须包含 {' / '.join(_SECURITY_FILE_COLUMNS)} 列之一")
     return [str(x).strip() for x in df[col].dropna().tolist() if str(x).strip()]
 
-
 def normalize_securities_arg(securities) -> List[str]:
     """解析 ``--securities``：代码/简称逗号分隔；以 ``.csv`` 结尾的 token 按文件读入。"""
     out: List[str] = []
@@ -306,10 +285,8 @@ def normalize_securities_arg(securities) -> List[str]:
                 out.append(x)
     return out
 
-
 def chunked(items: Sequence[Any], size: int) -> List[List[Any]]:
     return [list(items[i:i + size]) for i in range(0, len(items), size)]
-
 
 def default_date_range(
     start_date: Optional[str],
@@ -323,10 +300,8 @@ def default_date_range(
     end = end_date or (today + datetime.timedelta(days=forward_days)).strftime("%Y-%m-%d")
     return start, end
 
-
 OPEN_RANGE_START = "1980-01-01"
 OPEN_RANGE_END = "2099-12-31"
-
 
 def apply_optional_date_range(payload: dict, start_date: Optional[str], end_date: Optional[str]) -> dict:
     """可选日期区间：接口要求 startDate / endDate 同传或同不传，只给一端时另一端放开到极值。"""
@@ -335,10 +310,8 @@ def apply_optional_date_range(payload: dict, start_date: Optional[str], end_date
         payload["endDate"] = end_date or OPEN_RANGE_END
     return payload
 
-
 # 行情、估值接口按「日历天数 × 债券只数」预估行数，超过 10000 即以 100006 拒绝（与实际行数无关）
 DAILY_SPAN_BUDGET = 10000
-
 
 def daily_payloads(codes: Sequence[str], start: str, end: str, base_payload: dict) -> List[dict]:
     """按 天数 × 只数 ≤ DAILY_SPAN_BUDGET 拆分债券，生成同一日期区间的多组请求。"""
@@ -346,12 +319,10 @@ def daily_payloads(codes: Sequence[str], start: str, end: str, base_payload: dic
     size = max(1, DAILY_SPAN_BUDGET // max(days, 1))
     return [dict(base_payload, securityList=chunk, startDate=start, endDate=end) for chunk in chunked(list(codes), size)]
 
-
 # 付息兑付、发行增发接口同样按「日期跨度天数 × 债券只数」预估行数，约 25000 即拒绝；留出余量后按此预算拆分请求
 SPAN_BUDGET_DAYS = 20000
 _LIFETIME_MARGIN_DAYS = 31
 _LIFETIME_FALLBACK = (datetime.date(1990, 1, 1), datetime.date.today() + datetime.timedelta(days=366 * 50))
-
 
 def _parse_date(value) -> Optional[datetime.date]:
     if value is None or (isinstance(value, float) and pd.isna(value)):
@@ -363,7 +334,6 @@ def _parse_date(value) -> Optional[datetime.date]:
         except ValueError:
             continue
     return None
-
 
 def fetch_bond_lifetimes(
     codes: Sequence[str],
@@ -384,7 +354,6 @@ def fetch_bond_lifetimes(
                 margin = datetime.timedelta(days=_LIFETIME_MARGIN_DAYS)
                 out[row["securityCode"]] = (min(starts) - margin, max(ends) + margin)
     return out
-
 
 def plan_lifetime_payloads(
     codes: Sequence[str],
@@ -446,7 +415,6 @@ def plan_lifetime_payloads(
     flush()
     return payloads
 
-
 def sort_by_codes(df: pd.DataFrame, codes: Sequence[str], date_col: str) -> pd.DataFrame:
     """分批请求的结果按用户传入的债券顺序、再按日期升序排列。"""
     if df.empty or "securityCode" not in df.columns:
@@ -456,16 +424,13 @@ def sort_by_codes(df: pd.DataFrame, codes: Sequence[str], date_col: str) -> pd.D
     out = df.assign(_order=df["securityCode"].map(order).fillna(len(order)))
     return out.sort_values(keys, kind="stable").drop(columns="_order").reset_index(drop=True)
 
-
 def describe_period(start_date: Optional[str], end_date: Optional[str]) -> str:
     if not start_date and not end_date:
         return ""
     return f" {start_date or '最早'}~{end_date or '最晚'}"
 
-
 def _strip_unit_suffix(label: str) -> str:
     return re.sub(r"[（(][^（）()]*[)）]$", "", label).strip()
-
 
 def resolve_field_list(
     raw,
@@ -501,7 +466,6 @@ def resolve_field_list(
         return None, f"不支持的字段：{bad}。可选字段：{selectable}"
     return out or list(default_keys), None
 
-
 _ERROR_HINTS = {
     "100006": "结果超出单次 10000 行上限，请缩短日期区间或减少债券数量后重试",
     "110001": "日期格式不受支持，请使用 yyyy-MM-dd",
@@ -511,7 +475,6 @@ _ERROR_HINTS = {
 }
 
 _INVALID_CODES_PATTERN = re.compile(r"\[([^\[\]]*)\]")
-
 
 def post_bond_table(
     url: str,
@@ -538,7 +501,6 @@ def post_bond_table(
                 return pd.DataFrame(), None
             return post_bond_table(url, dict(payload, securityList=remaining), headers, timeout, retries, dropped)
     return df, err
-
 
 def _post_bond_table_once(
     url: str,
@@ -580,7 +542,6 @@ def _post_bond_table_once(
         return pd.DataFrame(), f"接口返回的数据行与表头长度不一致（表头 {len(fields)} 列），已拒绝解析以避免错位", []
     return pd.DataFrame([list(row) for row in rows], columns=fields), None, []
 
-
 # 枚举字段 → 常量分类（见 open-reference/constants/category 的 usageScopes）；
 # issuerRegion 的省市代码实际落在 domesticCity，regionCategory 只含国家/地区级代码
 CONSTANT_FIELD_CATEGORIES = {
@@ -595,7 +556,6 @@ CONSTANT_FIELD_CATEGORIES = {
 }
 _CONSTANT_CODE_PATTERN = re.compile(r"^\d{6,}$")
 _constants_cache: Dict[str, Dict[str, str]] = {}
-
 
 def _load_constants(category: str, headers: dict) -> Dict[str, str]:
     if category in _constants_cache:
@@ -613,7 +573,6 @@ def _load_constants(category: str, headers: dict) -> Dict[str, str]:
     _constants_cache[category] = mapping
     return mapping
 
-
 def decode_constants(df: pd.DataFrame, headers: dict) -> pd.DataFrame:
     """将枚举字段的常量代码替换为常量名称；常量表中查不到的代码保留原值。"""
     out = df.copy()
@@ -630,13 +589,11 @@ def decode_constants(df: pd.DataFrame, headers: dict) -> pd.DataFrame:
             out[col] = out[col].map(lambda v: mapping.get(str(v), v) if v is not None and not pd.isna(v) else v)
     return out
 
-
 def _trim_float(v: Any) -> Any:
     """去掉二进制浮点误差尾数（如 -6.5600000000000005 → -6.56）；15 位有效数字以内无损。"""
     if isinstance(v, float) and not pd.isna(v):
         return float(f"{v:.15g}")
     return v
-
 
 def to_display_df(df: pd.DataFrame, field_cn: Dict[str, str]) -> pd.DataFrame:
     """布尔列转 是/否，浮点去误差尾数，列名转中文。"""
@@ -649,13 +606,11 @@ def to_display_df(df: pd.DataFrame, field_cn: Dict[str, str]) -> pd.DataFrame:
             out[col] = out[col].map(_trim_float)
     return out.rename(columns={k: v for k, v in field_cn.items() if k in out.columns})
 
-
 def describe_securities(codes: Sequence[str], abbrs: Sequence[str]) -> str:
     if not codes:
         return ""
     first = f"{abbrs[0]}({codes[0]})" if abbrs and abbrs[0] else codes[0]
     return first if len(codes) == 1 else f"{first}等{len(codes)}只债券"
-
 
 def run_table_query(
     *,
@@ -727,43 +682,9 @@ def run_table_query(
         output_dir=output_dir,
     )
 
-
 def add_common_args(parser, field_help: str) -> None:
     parser.add_argument("--field-list", default=None, help=field_help)
     parser.add_argument("-od", "--output-dir", default=None, help="结果保存目录路径，建议使用绝对路径")
-
-
-OPENAPI_SKILL_VERSION = "1.7.0"
-SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
-
-
-def check_version(large_version: bool = True) -> bool:
-    response = requests.get(SKILL_CHECK_URL, timeout=15)
-    if response.status_code != 200:
-        return False
-    body = response.json()
-    if body.get("state") != "success":
-        return False
-    remote = str(body.get("version") or "")
-    local_parts = OPENAPI_SKILL_VERSION.split(".")
-    remote_parts = remote.split(".")
-    if large_version:
-        return (
-            len(remote_parts) >= 2
-            and remote_parts[0] == local_parts[0]
-            and remote_parts[1] == local_parts[1]
-        )
-    return remote == OPENAPI_SKILL_VERSION
-
-
-def warn_if_outdated() -> None:
-    try:
-        if not check_version():
-            update_sh = os.path.join(os.path.dirname(os.path.abspath(__file__)), "update.sh")
-            print(f"[WARNING] 存在 Gangtise bond 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise bond 版本失败\n")
-
 
 if __name__ == "__main__":
     print("检查 gangtise-bond 相关配置")
@@ -771,11 +692,4 @@ if __name__ == "__main__":
         print("  无法检测到gangtise密钥环境变量或授权文件, gangtise-bond 无法正常工作")
     else:
         print("  检测到gangtise授权文件, gangtise-bond 可以正常工作")
-    try:
-        if check_version(large_version=False):
-            print("  gangtise-bond 版本为最新")
-        else:
-            print("  gangtise-bond 版本不是最新, 建议进行更新")
-    except Exception:
-        print("  检查 gangtise-bond 版本失败")
     print(f"  gangtise-bond 工作文件目录: {gangtise_workspace_path}")

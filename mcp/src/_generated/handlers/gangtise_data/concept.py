@@ -30,9 +30,7 @@ from .utils import (
     CONCEPT_URL,
     get_authorization_token,
     get_headers_extra,
-    check_version,
-    format_response,
-)
+    format_response)
 
 from .search_concept import SEARCH_TOP_DEFAULT, resolve_concept_keyword
 from gangtise_core.auth import get_authorization_headers
@@ -433,15 +431,6 @@ def concept_securities(concepts: List[str]):
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(
-                f"[WARNING] 存在 Gangtise data 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n"
-            )
-    except Exception:
-        print("[WARNING] 检查 Gangtise data 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="题材指数：基本信息（定义/投资逻辑/行业空间/竞争格局）与分组成分股",

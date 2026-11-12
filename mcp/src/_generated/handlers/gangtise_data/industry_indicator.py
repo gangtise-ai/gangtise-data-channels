@@ -31,9 +31,7 @@ from .utils import (
     EDB_SEARCH_URL,
     get_authorization_token,
     get_headers_extra,
-    check_version,
-    format_response,
-)
+    format_response)
 from gangtise_core.auth import get_authorization_headers
 
 SEARCH_DEFAULT_LIMIT = 10
@@ -549,15 +547,6 @@ def industry_indicator_data(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(
-                f"[WARNING] 存在 Gangtise data 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n"
-            )
-    except Exception:
-        print("[WARNING] 检查 Gangtise data 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="行业指标（EDB）：检索指标元信息或拉取时序数据",

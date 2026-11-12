@@ -33,11 +33,9 @@ from .utils import (
     SECTOR_FUND_FLOW_CN,
     SECTOR_SEARCH_URL,
     get_authorization_token,
-    check_version,
     format_response,
     parse_str_list,
-    normalize_securities_arg,
-)
+    normalize_securities_arg)
 from gangtise_core.auth import get_authorization_headers
 
 # 个股默认返回全部净流入相关字段（securityCode、tradeDate 由接口自动前置）
@@ -628,13 +626,6 @@ def fund_flow_data(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(f"[WARNING] 存在 Gangtise data 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise data 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="查询 A 股个股或板块日资金流向（open fund-flow/daily、fund-flow/sector-daily）",

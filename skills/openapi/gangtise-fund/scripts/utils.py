@@ -18,7 +18,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import pandas as pd
 import requests
 
-
 from .gts_auth import (
     append_consumed_points_to_saved_file,
     apply_consumed_points,
@@ -30,7 +29,6 @@ from .gts_auth import (
 )
 from .gts_runtime import failure_result, success_result
 
-
 def __getattr__(name):
     if name == "GTS_AUTHORIZATION":
         return get_authorization_token()
@@ -38,16 +36,13 @@ def __getattr__(name):
         return get_headers_extra()
     raise AttributeError(name)
 
-
 DEPLOY_ENV = os.getenv("DEPLOY_ENV", "local")
-
 
 def _env_truthy(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
     if raw is None:
         return default
     return str(raw).strip().lower() in ("1", "true", "yes", "on")
-
 
 GTS_SAVE_FILE = _env_truthy("GTS_SAVE_FILE", False)
 GTS_SAVE_EXTENSION = os.getenv("GTS_SAVE_EXTENSION", "md")
@@ -82,7 +77,6 @@ INDICATOR_CROSS_SECTION_URL = GANGTISE_INDICATOR_DOMAIN + "/EDE/cross-section"
 
 WORK_PATH = os.getenv("WORK_PATH", None)
 
-
 def _find_openclaw_root() -> str:
     """向上遍历目录直到找到 .openclaw / .agent / workspace / skills。"""
     path = os.path.abspath(os.path.dirname(__file__))
@@ -98,7 +92,6 @@ def _find_openclaw_root() -> str:
             return os.path.abspath(os.path.dirname(cur))
         cur = os.path.dirname(cur)
     return os.path.abspath(os.getcwd())
-
 
 def resolve_gangtise_workspace_path() -> str:
     if WORK_PATH:
@@ -116,9 +109,7 @@ def resolve_gangtise_workspace_path() -> str:
     os.makedirs(os.path.join(base, ".usage"), exist_ok=True)
     return base
 
-
 gangtise_workspace_path = resolve_gangtise_workspace_path()
-
 
 def _unique_result_path(process_dir: str, module_name: str, extension: str) -> str:
     """日期、微秒和随机后缀独占创建，避免只靠时分秒重名。"""
@@ -140,7 +131,6 @@ def _unique_result_path(process_dir: str, module_name: str, extension: str) -> s
             return path
     raise RuntimeError("结果文件无法写入，请稍后重试")
 
-
 def alloc_result_path(
     method_name: str,
     module_name: str,
@@ -153,11 +143,9 @@ def alloc_result_path(
     except RuntimeError as exc:
         return None, f"错误信息：{exc}"
 
-
 def remove_html_tags(text):
     clean = re.compile("<.*?>")
     return re.sub(clean, "", text)
-
 
 def _md_cell(value: Any, max_cell_length: Optional[int]) -> str:
     if value is None or (isinstance(value, float) and pd.isna(value)):
@@ -166,7 +154,6 @@ def _md_cell(value: Any, max_cell_length: Optional[int]) -> str:
     if max_cell_length and len(text) > max_cell_length:
         return text[:max_cell_length] + "..."
     return text
-
 
 def data_to_md(data: pd.DataFrame, range: List[int] = None, max_cell_length: int = None):
     content = "| " + " | ".join(data.columns) + " |\n"
@@ -180,7 +167,6 @@ def data_to_md(data: pd.DataFrame, range: List[int] = None, max_cell_length: int
             continue
         content += "| " + " | ".join(_md_cell(row[key], max_cell_length) for key in row.keys()) + " |\n"
     return content.strip()
-
 
 METHOD_NAME_MAP = {
     "security": "基金检索",
@@ -198,7 +184,6 @@ METHOD_NAME_MAP = {
 }
 
 PREVIEW_MAX_CELL_LENGTH = 60
-
 
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None):
     points_note = apply_consumed_points(response)
@@ -244,16 +229,13 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
         return_message = return_message[:-6].strip()
     return success_result(return_message, response)
 
-
 def error_response(method_name: str, message: str, output_dir: Optional[str] = None):
     return format_response({"state": "error", "message": message, "data": []}, method_name, output_dir=output_dir)
-
 
 def build_headers() -> Optional[dict]:
     if not get_authorization_token():
         return None
     return get_authorization_headers()
-
 
 def parse_str_list(raw) -> List[str]:
     """将逗号分隔字符串或列表统一解析为非空字符串列表（MCP/CLI 均可传入）。"""
@@ -266,7 +248,6 @@ def parse_str_list(raw) -> List[str]:
         return []
     return [x.strip() for x in text.replace("，", ",").replace("、", ",").split(",") if x.strip()]
 
-
 _SECURITY_FILE_COLUMNS = (
     "security_code",
     "code",
@@ -277,7 +258,6 @@ _SECURITY_FILE_COLUMNS = (
     "security_abbr",
     "基金简称",
 )
-
 
 def load_securities_from_file(path: str) -> List[str]:
     """从 CSV 读取基金列表。须为已存在的 ``.csv``。"""
@@ -294,7 +274,6 @@ def load_securities_from_file(path: str) -> List[str]:
         raise ValueError(f"证券文件须包含 {' / '.join(_SECURITY_FILE_COLUMNS)} 列之一")
     return [str(x).strip() for x in df[col].dropna().tolist() if str(x).strip()]
 
-
 def normalize_securities_arg(securities) -> List[str]:
     """解析 ``--securities``：代码/简称逗号分隔；以 ``.csv`` 结尾的 token 按文件读入。"""
     out: List[str] = []
@@ -305,7 +284,6 @@ def normalize_securities_arg(securities) -> List[str]:
             if x and x not in out:
                 out.append(x)
     return out
-
 
 def default_date_range(
     start_date: Optional[str],
@@ -319,12 +297,10 @@ def default_date_range(
     end = end_date or (today + datetime.timedelta(days=forward_days)).strftime("%Y-%m-%d")
     return start, end
 
-
 def describe_period(start_date: Optional[str], end_date: Optional[str]) -> str:
     if not start_date and not end_date:
         return ""
     return f" {start_date or '最早'}~{end_date or '最晚'}"
-
 
 def check_date_range(start_date: Optional[str], end_date: Optional[str]) -> Optional[str]:
     for name, value in (("开始日期", start_date), ("结束日期", end_date)):
@@ -338,10 +314,8 @@ def check_date_range(start_date: Optional[str], end_date: Optional[str]) -> Opti
         return "开始日期不能晚于结束日期"
     return None
 
-
 def _strip_unit_suffix(label: str) -> str:
     return re.sub(r"[（(][^（）()]*[)）]$", "", label).strip()
-
 
 def resolve_field_list(
     raw,
@@ -377,7 +351,6 @@ def resolve_field_list(
         return None, f"不支持的字段：{bad}。可选字段：{selectable}"
     return out or list(default_keys), None
 
-
 def parse_types(
     raw,
     alias_to_key: Dict[str, str],
@@ -402,7 +375,6 @@ def parse_types(
         return [], f"不支持的 --type：{bad}。可选 {', '.join(order)}，或 all"
     return out, None
 
-
 def parse_choices(raw, alias_to_value: Dict[str, str], label: str) -> Tuple[List[str], Optional[str]]:
     tokens = parse_str_list(raw)
     if not tokens:
@@ -423,7 +395,6 @@ def parse_choices(raw, alias_to_value: Dict[str, str], label: str) -> Tuple[List
         return [], f"不支持的{label}：{bad}。可选 {', '.join(options)}"
     return out, None
 
-
 def parse_choice(raw, alias_to_value: Dict[str, str], label: str) -> Tuple[Optional[str], Optional[str]]:
     values, err = parse_choices(raw, alias_to_value, label)
     if err:
@@ -432,14 +403,12 @@ def parse_choice(raw, alias_to_value: Dict[str, str], label: str) -> Tuple[Optio
         return None, f"{label}只能指定一个"
     return (values[0] if values else None), None
 
-
 _ERROR_HINTS = {
     "100006": "结果超出单次 10000 行上限，请缩短日期区间或减少基金数量后重试",
     "110001": "日期格式不受支持，请使用 yyyy-MM-dd",
     "110002": "开始日期不能晚于结束日期",
     "120001": "基金代码格式无效，可直接传基金简称由脚本自动解析",
 }
-
 
 def _frame_from_block(block: dict) -> pd.DataFrame:
     """兼容对象列表，以及表头 fieldList + 位置数组 list 两种返回。"""
@@ -456,7 +425,6 @@ def _frame_from_block(block: dict) -> pd.DataFrame:
             raise ValueError(f"接口返回的数据行与表头长度不一致（表头 {len(fields)} 列）")
         return pd.DataFrame([list(row) for row in rows], columns=list(fields))
     raise ValueError("无法识别的返回结构")
-
 
 def post_fund_table(
     url: str,
@@ -489,7 +457,6 @@ def post_fund_table(
     except ValueError as e:
         return pd.DataFrame(), str(e)
 
-
 ENUM_LABELS = {
     "feeType": {
         "purchaseFee": "申购费",
@@ -506,7 +473,6 @@ ENUM_LABELS = {
     "positionType": {"top": "重仓", "all": "全部"},
 }
 
-
 def localize_enums(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     for col, mapping in ENUM_LABELS.items():
@@ -515,10 +481,8 @@ def localize_enums(df: pd.DataFrame) -> pd.DataFrame:
         out[col] = out[col].map(lambda v, m=mapping: m.get(v, v) if isinstance(v, str) else v)
     return out
 
-
 _THOUSANDS_NUMBER = re.compile(r"^-?\d{1,3}(,\d{3})+(\.\d+)?$")
 _PLAIN_NUMBER = re.compile(r"^-?(0|[1-9]\d*)(\.\d+)?$")
-
 
 def _trim_float(v: Any) -> Any:
     """去掉二进制浮点误差尾数（如 -6.5600000000000005 → -6.56）；15 位有效数字以内无损。"""
@@ -526,13 +490,11 @@ def _trim_float(v: Any) -> Any:
         return float(f"{v:.15g}")
     return v
 
-
 def _parse_thousands(v: Any) -> Any:
     if not isinstance(v, str):
         return v
     text = v.replace(",", "")
     return float(text) if "." in text else int(text)
-
 
 def normalize_numbers(df: pd.DataFrame) -> pd.DataFrame:
     """接口偶有千分位字符串数字（如 holderCount="2,219,140"）与浮点尾数，统一为普通数值。"""
@@ -551,7 +513,6 @@ def normalize_numbers(df: pd.DataFrame) -> pd.DataFrame:
             out[col] = out[col].map(_trim_float)
     return out
 
-
 def to_display_df(df: pd.DataFrame, field_cn: Dict[str, str]) -> pd.DataFrame:
     """布尔列转 是/否，枚举转中文，数值格式统一，列按字段表排序后改中文名。"""
     out = normalize_numbers(localize_enums(df))
@@ -564,13 +525,11 @@ def to_display_df(df: pd.DataFrame, field_cn: Dict[str, str]) -> pd.DataFrame:
     out = out[ordered + rest]
     return out.rename(columns={k: v for k, v in field_cn.items() if k in out.columns})
 
-
 def describe_securities(codes: Sequence[str], abbrs: Sequence[str]) -> str:
     if not codes:
         return ""
     first = f"{abbrs[0]}({codes[0]})" if abbrs and abbrs[0] else codes[0]
     return first if len(codes) == 1 else f"{first}等{len(codes)}只基金"
-
 
 def _apply_keep(df: pd.DataFrame, keep: Optional[Sequence[str]]) -> pd.DataFrame:
     if not keep:
@@ -580,7 +539,6 @@ def _apply_keep(df: pd.DataFrame, keep: Optional[Sequence[str]]) -> pd.DataFrame
         if must in df.columns and must not in cols:
             cols.insert(0, must)
     return df[cols] if cols else df
-
 
 def execute_jobs(
     *,
@@ -643,7 +601,6 @@ def execute_jobs(
         method_name,
         output_dir=output_dir,
     )
-
 
 def query_by_codes(
     *,
@@ -708,10 +665,8 @@ def query_by_codes(
         fallback=fallback,
     )
 
-
 def add_output_arg(parser) -> None:
     parser.add_argument("-od", "--output-dir", default=None, help="结果保存目录路径，建议使用绝对路径")
-
 
 def add_date_args(parser, *, daily_default: bool) -> None:
     if daily_default:
@@ -721,50 +676,10 @@ def add_date_args(parser, *, daily_default: bool) -> None:
         parser.add_argument("-sd", "--start-date", default=None, help="报告期开始 yyyy-MM-dd；不传则不限制")
         parser.add_argument("-ed", "--end-date", default=None, help="报告期结束 yyyy-MM-dd；不传则不限制")
 
-
-OPENAPI_SKILL_VERSION = "1.7.0"
-SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
-
-
-def check_version(large_version: bool = True) -> bool:
-    response = requests.get(SKILL_CHECK_URL, timeout=15)
-    if response.status_code != 200:
-        return False
-    body = response.json()
-    if body.get("state") != "success":
-        return False
-    remote = str(body.get("version") or "")
-    local_parts = OPENAPI_SKILL_VERSION.split(".")
-    remote_parts = remote.split(".")
-    if large_version:
-        return (
-            len(remote_parts) >= 2
-            and remote_parts[0] == local_parts[0]
-            and remote_parts[1] == local_parts[1]
-        )
-    return remote == OPENAPI_SKILL_VERSION
-
-
-def warn_if_outdated() -> None:
-    try:
-        if not check_version():
-            update_sh = os.path.join(os.path.dirname(os.path.abspath(__file__)), "update.sh")
-            print(f"[WARNING] 存在 Gangtise fund 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise fund 版本失败\n")
-
-
 if __name__ == "__main__":
     print("检查 gangtise-fund 相关配置")
     if not get_authorization_token():
         print("  无法检测到gangtise密钥环境变量或授权文件, gangtise-fund 无法正常工作")
     else:
         print("  检测到gangtise授权文件, gangtise-fund 可以正常工作")
-    try:
-        if check_version(large_version=False):
-            print("  gangtise-fund 版本为最新")
-        else:
-            print("  gangtise-fund 版本不是最新, 建议进行更新")
-    except Exception:
-        print("  检查 gangtise-fund 版本失败")
     print(f"  gangtise-fund 工作文件目录: {gangtise_workspace_path}")

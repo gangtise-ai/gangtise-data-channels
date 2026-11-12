@@ -30,10 +30,8 @@ from .utils import (
     WECHAT_GROUP_CHATROOM_URL,
     FILE_DEFAULT_LIMIT,
     format_response,
-    check_version,
     is_code_arg,
-    parse_bool_flag,
-)
+    parse_bool_flag)
 from .gts_auth import authorized_request
 
 _CATEGORY_VALID = {"text", "image", "document", "url", "audio", "video"}
@@ -778,12 +776,6 @@ def wechat_message_finder(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise private 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise private 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="微信群消息：检索群 ID、拉取消息或下载附件（open-vault wechatgroupmsg）",

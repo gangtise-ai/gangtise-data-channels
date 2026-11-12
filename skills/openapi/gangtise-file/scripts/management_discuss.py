@@ -30,9 +30,7 @@ from .utils import (  # noqa: E402
     MANAGEMENT_DISCUSS_DIMENSION_MAP,
     MANAGEMENT_DISCUSS_DIMENSION_LABEL,
     format_response,
-    match_best,
-    check_version,
-)
+    match_best)
 from .security import batch_security_search
 from .gts_auth import authorized_request, get_authorization_headers
 
@@ -388,12 +386,6 @@ def main():
         required=True,
         help="讨论维度：businessOperation / financialPerformance / developmentAndRisk / all",
     )
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise skills 版本失败\n")
-
     parser.add_argument(
         "-od",
         "--output-dir",

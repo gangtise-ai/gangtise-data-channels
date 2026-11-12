@@ -39,11 +39,9 @@ from .utils import (  # noqa: E402
     format_response,
     match_best,
     remove_html_tags,
-    check_version,
 
     FILE_DOWNLOAD_DEFAULT_LIMIT,
-    resolve_result_limit,
-)
+    resolve_result_limit)
 from .search_institution import (
     CATEGORY_LEAD_INSTITUTION,
     USAGE_PARAM_INSTITUTION_LIST,
@@ -825,12 +823,6 @@ def main():
     permission_list = _parse_int_list(args.permission)
     download = args.download or False
     output_dir = args.output_dir or None
-
-    try:
-        if not check_version():
-            print(f"[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print(f"[WARNING] 检查 Gangtise skills 版本失败\n")
 
     out = calendar_finder(
         kind=args.schedule_type,

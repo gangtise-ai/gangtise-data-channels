@@ -38,10 +38,8 @@ from .utils import (
     FILE_DEFAULT_LIMIT,
     authorized_request,
     format_response,
-    check_version,
     get_authorization_token,
-    is_code_arg,
-)
+    is_code_arg)
 
 DEFAULT_LIST_LIMIT = FILE_DEFAULT_LIMIT.get("private_cloud", 100)
 IDS_FILE_HINT = "可以删除行或保留需要的文件，再通过 --files-file 参数下载"
@@ -906,12 +904,6 @@ def private_cloud_finder(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise private 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise private 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="AI云盘：检索/下载文件、浏览文件夹，以及上传、新建文件夹、重命名、移动、复制、删除（open-vault drive）",

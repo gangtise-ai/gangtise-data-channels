@@ -38,11 +38,9 @@ from .utils import (
     INDICATOR_CROSS_SECTION_URL,
     INDICATOR_SEARCH_URL,
     INDICATOR_TIME_SERIES_URL,
-    check_version,
     format_response,
     normalize_securities_arg,
-    parse_str_list,
-)
+    parse_str_list)
 from gangtise_core.auth import get_authorization_headers
 
 INDICATORS_FILE_HINT = (
@@ -1210,13 +1208,6 @@ def bond_indicator(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(f"[WARNING] 存在 Gangtise bond 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise bond 版本失败\n")
 
     today_str = date.today().strftime("%Y-%m-%d")
     default_start = (date.today() - timedelta(days=365)).strftime("%Y-%m-%d")

@@ -33,11 +33,9 @@ from .utils import (
     get_authorization_token,
     get_headers_extra,
     MAIN_BUSINESS_URL,
-    check_version,
     format_response,
     parse_str_list,
-    normalize_securities_arg,
-)
+    normalize_securities_arg)
 from gangtise_core.auth import authorized_request, get_authorization_headers
 
 # open 文档：可选指标，默认全取
@@ -357,13 +355,6 @@ def main_business_data(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(f"[WARNING] 存在 Gangtise data 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise data 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="查询主营构成（open main-business）",

@@ -21,7 +21,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.append(script_dir)
 
-from .utils import get_authorization_token, HOT_TOPIC_LIST_URL, get_headers_extra, check_version, format_response
+from .utils import get_authorization_token, HOT_TOPIC_LIST_URL, get_headers_extra, format_response
 from gangtise_core.auth import authorized_request, get_authorization_headers
 from gangtise_core.skill_runtime import ValidationError
 
@@ -305,12 +305,6 @@ def _normalize_list(raw: Optional[str]) -> Optional[List[str]]:
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            print(f"[WARNING] 存在 Gangtise agent 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise agent 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="Gangtise Hot Topic OpenAPI 调用入口",

@@ -38,11 +38,9 @@ from .utils import (  # noqa: E402
     US_ANNOUNCEMENT_CATEGORY_MAP,
     DOWNLOAD_DEFAULT,
     DOWNLOAD_TYPE_DEFAULT,
-    check_version,
 
     FILE_DOWNLOAD_DEFAULT_LIMIT,
-    resolve_result_limit,
-)
+    resolve_result_limit)
 from .get_file import download_files
 from .security import batch_security_search
 from gangtise_core.auth import authorized_request, get_authorization_headers
@@ -658,12 +656,6 @@ def main():
         default=DOWNLOAD_TYPE_DEFAULT.get("announcement", "pdf") or "pdf",
         help="下载的文件类型，逗号分隔，可选值：pdf, markdown",
     )
-    try:
-        if not check_version():
-            print(f"[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print(f"[WARNING] 检查 Gangtise skills 版本失败\n")
-
     args = parser.parse_args()
     keyword = args.keyword or ""
     securities = _parse_str_list(args.securities)

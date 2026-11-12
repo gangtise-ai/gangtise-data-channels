@@ -51,11 +51,9 @@ from .utils import (
     US_FINANCIAL_REPORT_INCOME_URL,
     US_FINANCIAL_REPORT_BALANCE_URL,
     US_FINANCIAL_REPORT_CASH_FLOW_URL,
-    check_version,
     format_response,
     parse_str_list,
-    normalize_securities_arg,
-)
+    normalize_securities_arg)
 from .gts_auth import authorized_request, get_authorization_headers
 
 # 命令行使用 Q1~Q4、Q0；发往 open 接口时映射为官方 period 枚举
@@ -1016,13 +1014,6 @@ def bond_financial(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(f"[WARNING] 存在 Gangtise bond 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise bond 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="查询发债公司财务报表：利润表 / 资产负债表 / 现金流量表（仅债券，走 A 股 financial-report）",

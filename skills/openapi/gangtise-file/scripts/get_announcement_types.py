@@ -17,7 +17,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.append(script_dir)
 
-from .utils import ANNOUNCEMENT_CATEGORYS, check_version # noqa: E402
+from .utils import ANNOUNCEMENT_CATEGORYS # noqa: E402
 
 def tree_to_string(
     tree_nodes,
@@ -67,12 +67,6 @@ def main():
         help="cn=股票公告(103910000) 树；hk=港股公告(103970000) 树",
     )
     args = parser.parse_args()
-
-    try:
-        if not check_version():
-            print(f"[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print(f"[WARNING] 检查 Gangtise skills 版本失败\n")
 
     valid_types = ["港股公告"] if args.market == "hk" else ["股票公告"]
     print("\n".join(tree_to_string(ANNOUNCEMENT_CATEGORYS, valid_types=valid_types)))

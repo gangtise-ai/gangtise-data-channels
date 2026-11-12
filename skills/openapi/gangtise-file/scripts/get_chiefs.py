@@ -22,7 +22,7 @@ if script_dir not in sys.path:
     sys.path.append(script_dir)
 
 from .search_chief import SEARCH_TOP_DEFAULT, chief_item_to_row, search_chiefs  # noqa: E402
-from .utils import get_authorization_token, get_headers_extra, check_version  # noqa: E402
+from .utils import get_authorization_token, get_headers_extra  # noqa: E402
 from .gts_auth import get_authorization_headers
 
 
@@ -125,12 +125,6 @@ def get_chiefs(
     top: int = SEARCH_TOP_DEFAULT,
 ) -> tuple[str, int]:
     """检索首席分析师，返回 (输出文案, 退出码)。"""
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise skills 版本失败\n")
-
     if get_authorization_token() is None:
         return "未配置 gangtise 授权，无法调用 open 接口", 1
 

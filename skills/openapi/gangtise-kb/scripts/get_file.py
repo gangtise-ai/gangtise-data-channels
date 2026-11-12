@@ -33,9 +33,7 @@ from .utils import (
     FOREIGN_REPORT_DOWNLOAD_URL,
     FILE_TYPE_MAP,
     file_dir,
-    gangtise_workspace_path,
-    check_version,
-)
+    gangtise_workspace_path)
 from .gts_auth import authorized_request, get_authorization_headers
 
 def _normalize_download_type(download_type: Optional[str]) -> str:
@@ -217,11 +215,6 @@ def get_file(
 ):
     title = title.replace("/", "_") if title else None
     try:
-        try:
-            if not check_version():
-                print(f"[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-        except Exception as e:
-            print(f"[WARNING] 检查 Gangtise skills 版本失败\n")
         headers = get_authorization_headers()
 
         requested_type = _normalize_download_type(download_type)

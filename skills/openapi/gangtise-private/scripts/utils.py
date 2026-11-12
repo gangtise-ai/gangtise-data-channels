@@ -518,18 +518,6 @@ def match_best(item: str, candidates, threshold: float = 0.6):
     return None
 
 PRIVATE_SKILL_VERSION = "1.0.0"
-OPENAPI_SKILL_VERSION = "1.8.0"
-SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
-
-def check_version(large_version: bool = True):
-    response = requests.get(SKILL_CHECK_URL)
-    if response.status_code == 200 and large_version:
-        return response.json()["state"] == "success" and response.json()["version"].split(".")[0] == OPENAPI_SKILL_VERSION.split(".")[0] and response.json()["version"].split(".")[1] == OPENAPI_SKILL_VERSION.split(".")[1]
-    elif response.status_code == 200 and not large_version:
-        return response.json()["state"] == "success" and response.json()["version"] == OPENAPI_SKILL_VERSION
-    else:
-        return False
-
 if __name__ == "__main__":
     print("检查 gangtise-private 相关配置")
     if not get_authorization_token():
@@ -540,8 +528,4 @@ if __name__ == "__main__":
         print(f"  GTS_SAVE_FILE 已启用，群消息等将保存为 {GTS_SAVE_EXTENSION}（股票池 CSV 始终落盘）")
     else:
         print("  GTS_SAVE_FILE 未启用：群消息仅在回复中展示；设置 GTS_SAVE_FILE=True 可落盘 md/json")
-    if check_version(large_version=False):
-        print("  gangtise-private 依赖的 OpenAPI skills 版本检查通过")
-    else:
-        print("  建议检查 OpenAPI skills 版本更新")
     print(f"  工作目录: {gangtise_workspace_path}")

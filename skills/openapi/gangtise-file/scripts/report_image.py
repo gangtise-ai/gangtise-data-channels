@@ -28,12 +28,10 @@ from .utils import (  # noqa: E402
     FILE_DEFAULT_LIMIT,
     DOWNLOAD_DEFAULT,
     format_response,
-    check_version,
     gangtise_workspace_path,
 
     FILE_DOWNLOAD_DEFAULT_LIMIT,
-    resolve_result_limit,
-)
+    resolve_result_limit)
 from .get_file import (  # noqa: E402
     UnsupportedClientPathError,
     _download_success_info,
@@ -406,12 +404,6 @@ def main():
     args = parser.parse_args()
 
     output_dir = args.output_dir or None
-
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise skills 版本失败\n")
 
     out = report_image_finder(
         keyword=args.keyword,

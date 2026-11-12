@@ -245,7 +245,6 @@ def _unique_result_path(process_dir: str, module_name: str, extension: str) -> s
             return path
     raise RuntimeError("结果文件无法写入，请稍后重试")
 
-
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None, additional_message: str = ""):
     should_save = bool(output_dir) or GTS_SAVE_FILE
     points_note = apply_consumed_points(response)
@@ -371,18 +370,6 @@ def load_securities_from_file(path: str) -> List[str]:
         return [str(x) for x in df["security_code"].dropna().tolist()]
     raise ValueError("证券文件必须包含 security_code 或 security_abbr 列")
 
-OPENAPI_SKILL_VERSION = "1.7.0"
-SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
-
-def check_version(large_version: bool = True):
-    response = requests.get(SKILL_CHECK_URL)
-    if response.status_code == 200 and large_version:
-        return response.json()["state"] == "success" and response.json()["version"].split(".")[0] == OPENAPI_SKILL_VERSION.split(".")[0] and response.json()["version"].split(".")[1] == OPENAPI_SKILL_VERSION.split(".")[1]
-    elif response.status_code == 200 and not large_version:
-        return response.json()["state"] == "success" and response.json()["version"] == OPENAPI_SKILL_VERSION
-    else:
-        return False
-
 if __name__ == "__main__":
     print("检查 gangtise-kb 相关配置")
     if not get_authorization_token():
@@ -393,16 +380,10 @@ if __name__ == "__main__":
         print("  环境变量 GTS_SAVE_FILE 为 True, gangtise服务端 将保存查询结果到文件中")
     else:
         print("  环境变量 GTS_SAVE_FILE 为 False（未配置或非真值）, gangtise服务端 将不保存查询结果到文件中")
-    if check_version(large_version=False):
-        print("  gangtise-kb 版本为最新")
-    else:
-        print("  gangtise-kb 版本不是最新, 建议进行更新")
     print(f"  gangtise-kb 工作文件目录: {gangtise_workspace_path}")
-
 
 _TRUE_WORDS = {"1", "true", "yes", "y", "on", "是"}
 _FALSE_WORDS = {"0", "false", "no", "n", "off", "否"}
-
 
 def parse_bool_flag(value) -> bool:
     """argparse 布尔开关：`-d` 视为 true，也接受 `-d true/false`。"""

@@ -31,11 +31,9 @@ from .utils import (  # noqa: E402
     format_response,
     match_best,
     remove_html_tags,
-    check_version,
     DOWNLOAD_DEFAULT,
     DOWNLOAD_TYPE_DEFAULT,
-    resolve_result_limit,
-)
+    resolve_result_limit)
 from .get_file import download_files, guard_opinion_detail_download
 from .security import batch_security_search
 from .search_chief import SEARCH_TOP_DEFAULT, resolve_chief_token
@@ -750,12 +748,6 @@ def main():
         for x in str(args.download_types or "txt").replace("，", ",").split(",")
         if x.strip()
     ] or ["txt"]
-
-    try:
-        if not check_version():
-            print(f"[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print(f"[WARNING] 检查 Gangtise skills 版本失败\n")
 
     out = opinion_finder(
         keyword=keyword,

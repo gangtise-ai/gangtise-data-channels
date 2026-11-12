@@ -33,13 +33,11 @@ from .utils import (  # noqa: E402
     format_response,
     match_best,
     remove_html_tags,
-    check_version,
     DOWNLOAD_DEFAULT,
     DOWNLOAD_TYPE_DEFAULT,
 
     FILE_DOWNLOAD_DEFAULT_LIMIT,
-    resolve_result_limit,
-)
+    resolve_result_limit)
 from .get_file import download_files, guard_opinion_detail_download
 from .gts_runtime import ValidationError, guard_row_billed_fetch
 from .security import batch_security_search
@@ -556,12 +554,6 @@ def main():
         download_types = _parse_download_types(
             DOWNLOAD_TYPE_DEFAULT.get("foreign_opinion", "html") or "html"
         )
-
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise skills 版本失败\n")
 
     out = opinion_finder(
         source=args.source,

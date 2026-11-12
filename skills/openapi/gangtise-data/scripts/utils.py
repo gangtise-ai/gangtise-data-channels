@@ -218,7 +218,6 @@ def _unique_result_path(process_dir: str, module_name: str, extension: str) -> s
             return path
     raise RuntimeError("结果文件无法写入，请稍后重试")
 
-
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None):
     should_save = bool(output_dir) or GTS_SAVE_FILE
     points_note = apply_consumed_points(response)
@@ -405,7 +404,6 @@ def load_securities_from_file(path: str) -> List[str]:
 
 _SECURITY_SEPARATORS = re.compile(r"[,，、;；\s]+")
 
-
 def split_security_tokens(raw) -> List[str]:
     """证券列表拆分：逗号（全/半角）、顿号、分号（全/半角）与空白均视为分隔符；以 .csv 结尾的整项按文件路径保留。"""
     if raw is None:
@@ -422,7 +420,6 @@ def split_security_tokens(raw) -> List[str]:
         out.extend(x for x in _SECURITY_SEPARATORS.split(text) if x)
     return out
 
-
 def dedupe_codes(codes) -> List[str]:
     """按代码去重（不区分大小写），保留首次出现的写法与顺序。"""
     out: List[str] = []
@@ -433,7 +430,6 @@ def dedupe_codes(codes) -> List[str]:
             seen.add(s.upper())
             out.append(s)
     return out
-
 
 def dedupe_resolved(codes, abbrs) -> Tuple[List[str], List[str]]:
     """证券解析后按代码去重（不区分大小写）：「茅台,600519」解析到同一代码时只保留一份，简称与代码保持对齐。"""
@@ -450,7 +446,6 @@ def dedupe_resolved(codes, abbrs) -> Tuple[List[str], List[str]]:
         out_codes.append(code)
         out_abbrs.append(abbrs[i] if i < len(abbrs) else "")
     return out_codes, out_abbrs
-
 
 def normalize_securities_arg(securities) -> Optional[List[str]]:
     """解析 ``--securities``：代码/名称以逗号、顿号、分号或空白分隔；以 ``.csv`` 结尾的 token 按文件读入。"""
@@ -1955,18 +1950,6 @@ SECTOR_FUND_FLOW_CN = {
     "sectorTotalOutflow": "板块全单流出金额（单位：元）",
 }
 
-OPENAPI_SKILL_VERSION = "1.8.0"
-SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
-
-def check_version(large_version: bool = True):
-    response = requests.get(SKILL_CHECK_URL)
-    if response.status_code == 200 and large_version:
-        return response.json()["state"] == "success" and response.json()["version"].split(".")[0] == OPENAPI_SKILL_VERSION.split(".")[0] and response.json()["version"].split(".")[1] == OPENAPI_SKILL_VERSION.split(".")[1]
-    elif response.status_code == 200 and not large_version:
-        return response.json()["state"] == "success" and response.json()["version"] == OPENAPI_SKILL_VERSION
-    else:
-        return False
-
 if __name__ == "__main__":
     print("检查 gangtise-file 相关配置")
     if not get_authorization_token():
@@ -1977,8 +1960,4 @@ if __name__ == "__main__":
         print("  环境变量 GTS_SAVE_FILE 为 True, gangtise服务端 将保存查询结果到文件中")
     else:
         print("  环境变量 GTS_SAVE_FILE 为 False（未配置或非真值）, gangtise服务端 将不保存查询结果到文件中")
-    if check_version(large_version=False):
-        print("  gangtise-file 版本为最新")
-    else:
-        print("  gangtise-file 版本不是最新, 建议进行更新")
     print(f"  gangtise-file 工作文件目录: {gangtise_workspace_path}")

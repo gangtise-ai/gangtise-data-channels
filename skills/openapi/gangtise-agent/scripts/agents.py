@@ -27,9 +27,7 @@ from .utils import (
     get_headers_extra,
     GANGTISE_AGENT_URL,
     STOCK_SUMMARY_LIST_URL,
-    check_version,
-    format_response,
-)
+    format_response)
 from .security import batch_security_search
 from .search_concept import resolve_concept_keyword
 from .gts_auth import authorized_request, get_authorization_headers
@@ -729,12 +727,6 @@ def openapi_agent(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            print(f"[WARNING] 存在 Gangtise agent 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise agent 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="Gangtise Agent OpenAPI 统一调用入口",

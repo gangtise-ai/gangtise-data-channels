@@ -28,12 +28,10 @@ from .security import batch_security_search, resolved_code_abbr_map
 from .utils import (
     get_authorization_token,
     get_headers_extra,
-    check_version,
     format_response,
     parse_str_list,
     TOP_HOLDERS_URL,
-    normalize_securities_arg,
-)
+    normalize_securities_arg)
 from .gts_auth import authorized_request, get_authorization_headers
 
 HOLDER_TYPE_MAP = {
@@ -267,13 +265,6 @@ def shareholder_data(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(f"[WARNING] 存在 Gangtise data 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise data 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="查询前十大股东/前十大流通股东（open top-holders）",

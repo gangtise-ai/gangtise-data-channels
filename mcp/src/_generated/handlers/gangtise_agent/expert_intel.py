@@ -27,10 +27,8 @@ from .search_concept import resolve_concept_keyword
 from .security import security_search_basic
 from .utils import (
     EXPERT_INTEL_LIST_URL,
-    check_version,
     format_response,
-    get_authorization_token,
-)
+    get_authorization_token)
 
 METHOD_NAME = "expert_intel"
 POINTS_PER_ITEM = 20
@@ -411,12 +409,6 @@ def expert_intel(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise agent 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise agent 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="AI专家情报列表（open-insight expertIntel/getList）",

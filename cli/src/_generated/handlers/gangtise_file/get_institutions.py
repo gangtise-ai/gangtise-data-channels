@@ -29,7 +29,7 @@ from .search_institution import (  # noqa: E402
     institution_item_to_row,
     search_institutions,
 )
-from .utils import get_authorization_token, get_headers_extra, check_version  # noqa: E402
+from .utils import get_authorization_token, get_headers_extra  # noqa: E402
 from gangtise_core.auth import get_authorization_headers
 
 
@@ -70,12 +70,6 @@ def get_institutions(
     top: int = SEARCH_TOP_DEFAULT,
 ) -> tuple[str, int]:
     """检索机构，返回 (输出文案, 退出码)。"""
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise skills 版本失败\n")
-
     if get_authorization_token() is None:
         return "未配置 gangtise 授权，无法调用 open 接口", 1
 

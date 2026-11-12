@@ -18,7 +18,6 @@ from typing import Any, Dict, Optional, Tuple
 
 import requests
 
-
 from gangtise_core.auth import (
     authorized_request,
     get_authorization_headers,
@@ -28,7 +27,6 @@ from gangtise_core.auth import (
 )
 from gangtise_core.skill_runtime import failure_result, success_result
 
-
 def __getattr__(name):
     if name == "GTS_AUTHORIZATION":
         return get_authorization_token()
@@ -36,12 +34,10 @@ def __getattr__(name):
         return get_headers_extra()
     raise AttributeError(name)
 
-
 DEPLOY_ENV = os.getenv("DEPLOY_ENV", "local")
 
 GANGTISE_TOOL_DOMAIN = gangtise_domain("GANGTISE_TOOL_DOMAIN", "https://openapi.gangtise.com/application/open-tool")
 WEB_SEARCH_URL = GANGTISE_TOOL_DOMAIN + "/web-search/search"
-
 
 def _env_truthy(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
@@ -49,12 +45,10 @@ def _env_truthy(name: str, default: bool = False) -> bool:
         return default
     return str(raw).strip().lower() in ("1", "true", "yes", "on")
 
-
 GTS_SAVE_FILE = _env_truthy("GTS_SAVE_FILE", False)
 GTS_SAVE_EXTENSION = os.getenv("GTS_SAVE_EXTENSION", "md")
 
 WORK_PATH = os.getenv("WORK_PATH", None)
-
 
 def _find_openclaw_root() -> str:
     """向上遍历目录直到找到 .openclaw / .agent / workspace / skills。"""
@@ -72,7 +66,6 @@ def _find_openclaw_root() -> str:
         cur = os.path.dirname(cur)
     return os.path.abspath(os.getcwd())
 
-
 def resolve_gangtise_workspace_path() -> str:
     if WORK_PATH:
         base = WORK_PATH
@@ -89,9 +82,7 @@ def resolve_gangtise_workspace_path() -> str:
     os.makedirs(os.path.join(base, ".usage"), exist_ok=True)
     return base
 
-
 gangtise_workspace_path = resolve_gangtise_workspace_path()
-
 
 def _unique_result_path(process_dir: str, module_name: str, extension: str) -> str:
     """日期、微秒和随机后缀独占创建，避免只靠时分秒重名。"""
@@ -113,7 +104,6 @@ def _unique_result_path(process_dir: str, module_name: str, extension: str) -> s
             return path
     raise RuntimeError("结果文件无法写入，请稍后重试")
 
-
 def alloc_result_path(
     method_name: str,
     module_name: str,
@@ -126,33 +116,8 @@ def alloc_result_path(
     except RuntimeError as exc:
         return None, f"错误信息：{exc}"
 
-
-OPENAPI_SKILL_VERSION = "1.7.0"
-SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"
-
-
-def check_version(large_version: bool = True) -> bool:
-    response = requests.get(SKILL_CHECK_URL, timeout=15)
-    if response.status_code != 200:
-        return False
-    body = response.json()
-    if body.get("state") != "success":
-        return False
-    remote = str(body.get("version") or "")
-    local_parts = OPENAPI_SKILL_VERSION.split(".")
-    remote_parts = remote.split(".")
-    if large_version:
-        return (
-            len(remote_parts) >= 2
-            and remote_parts[0] == local_parts[0]
-            and remote_parts[1] == local_parts[1]
-        )
-    return remote == OPENAPI_SKILL_VERSION
-
-
 def dump_json(data: Any) -> str:
     return json.dumps(data, ensure_ascii=False, indent=2)
-
 
 if __name__ == "__main__":
     print("检查 gangtise-web 相关配置")
@@ -164,11 +129,4 @@ if __name__ == "__main__":
         print(f"  环境变量 GTS_SAVE_FILE 为 True, 查询结果将保存为 {GTS_SAVE_EXTENSION}")
     else:
         print("  环境变量 GTS_SAVE_FILE 为 False（未配置或非真值）, 查询结果仅在回复中展示")
-    try:
-        if check_version(large_version=False):
-            print("  gangtise-web 版本为最新")
-        else:
-            print("  gangtise-web 版本不是最新, 建议进行更新")
-    except Exception:
-        print("  检查 gangtise-web 版本失败")
     print(f"  gangtise-web 工作文件目录: {gangtise_workspace_path}")

@@ -23,7 +23,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.append(script_dir)
 
-from .utils import get_authorization_token, get_headers_extra, check_version, format_response, GANGTISE_OPENAI_DOMAIN
+from .utils import get_authorization_token, get_headers_extra, format_response, GANGTISE_OPENAI_DOMAIN
 from .security import security_search_basic
 from gangtise_core.auth import authorized_request, get_authorization_headers
 from gangtise_core.skill_runtime import ValidationError, guard_row_billed_fetch
@@ -401,12 +401,6 @@ def _normalize_list(raw: Optional[str]) -> Optional[List[str]]:
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            print(f"[WARNING] 存在 Gangtise agent 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise agent 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="Gangtise Security Clue OpenAPI 调用入口",

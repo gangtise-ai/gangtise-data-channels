@@ -22,7 +22,7 @@ if script_dir not in sys.path:
 from .gts_auth import authorized_request, get_authorization_headers
 from .gts_runtime import ValidationError
 from .security import security_search_basic
-from .utils import GANGTISE_OPENAI_DOMAIN, check_version, format_response
+from .utils import GANGTISE_OPENAI_DOMAIN, format_response
 
 INDICATOR_URL = f"{GANGTISE_OPENAI_DOMAIN}/management-sentiment/company/indicator"
 CONCLUSION_URL = f"{GANGTISE_OPENAI_DOMAIN}/management-sentiment/company/conclusion"
@@ -614,12 +614,6 @@ def management_sentiment(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise agent 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise agent 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="公司管理层情绪：指标、结论、问答明细（通过 -t/--type 指定）。",

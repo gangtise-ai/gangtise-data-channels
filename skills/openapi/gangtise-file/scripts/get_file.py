@@ -44,9 +44,7 @@ from .utils import (
     FILE_TYPE_MAP,
     file_dir,
     gangtise_workspace_path,
-    check_version,
-    remove_html_tags,
-)
+    remove_html_tags)
 from .gts_auth import authorized_request, get_authorization_headers
 from .gts_runtime import ValidationError, credit_guard_enabled, request_json
 
@@ -749,11 +747,6 @@ def get_file(
 ):
     title = title.replace("/", "_") if title else None
     try:
-        try:
-            if not check_version():
-                print(f"[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-        except Exception:
-            print(f"[WARNING] 检查 Gangtise skills 版本失败\n")
         headers = get_authorization_headers()
 
         if _is_opinion_detail_type(file_type):

@@ -28,9 +28,7 @@ from .utils import (
     RAG_URL,
     FILE_TYPE_MAP_REVERSE,
     FILE_TYPE_MAP,
-    format_response,
-    check_version,
-)
+    format_response)
 
 from .get_file import download_files
 from .gts_auth import authorized_request, get_authorization_headers
@@ -119,12 +117,6 @@ def rag_files_finder(
     download_types: Optional[List[str]] = None,
 ):
     try:
-        try:
-            if not check_version():
-                print(f"[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-        except Exception as e:
-            print(f"[WARNING] 检查 Gangtise skills 版本失败\n")
-
         query = (query or "").strip()
         query, _inj_stripped = _strip_query_injection_prefix(query)
         if _inj_stripped:

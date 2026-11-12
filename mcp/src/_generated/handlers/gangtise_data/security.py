@@ -27,10 +27,8 @@ from .utils import (
     SECURITIES_SEARCH_URL,
     get_authorization_token,
     get_headers_extra,
-    check_version,
     format_response,
-    remove_html_tags,
-)
+    remove_html_tags)
 from gangtise_core.auth import authorized_request, get_authorization_headers
 
 
@@ -733,13 +731,6 @@ def resolved_code_abbr_map(resolved: Dict) -> Dict[str, str]:
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(f"[WARNING] 存在 Gangtise data 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise data 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="证券代码搜索（open-reference / securities/search）",

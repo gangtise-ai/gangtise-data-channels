@@ -29,9 +29,7 @@ from .utils import (
     RECORD_LIST_URL,
     FILE_DEFAULT_LIMIT,
     format_response,
-    check_version,
-    is_code_arg,
-)
+    is_code_arg)
 from .gts_auth import authorized_request
 from .gts_runtime import ValidationError
 
@@ -586,12 +584,6 @@ def private_record_finder(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            print("[WARNING] 存在 Gangtise private 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise private 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="录音速记：检索录音列表或按 recordId 下载原始/ASR/速记（open-vault record）",

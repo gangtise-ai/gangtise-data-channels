@@ -34,7 +34,6 @@ from .utils import (  # noqa: E402
     format_response,
     match_best,
     remove_html_tags,
-    check_version,
     DOWNLOAD_DEFAULT,
     DOWNLOAD_TYPE_DEFAULT,
     resolve_report_category_list,
@@ -43,8 +42,7 @@ from .utils import (  # noqa: E402
     report_llm_tag_display,
 
     FILE_DOWNLOAD_DEFAULT_LIMIT,
-    resolve_result_limit,
-)
+    resolve_result_limit)
 from .get_file import download_files
 from .security import batch_security_search
 from .search_institution import (
@@ -532,12 +530,6 @@ def main():
     download = args.download or False
     output_dir = args.output_dir or None
     download_types = _parse_str_list(args.download_types)
-
-    try:
-        if not check_version():
-            print(f"[WARNING] 存在 Gangtise skills 版本更新，请与用户确认是否更新\n")
-    except Exception:
-        print(f"[WARNING] 检查 Gangtise skills 版本失败\n")
 
     out = report_finder(
         keyword=keyword,

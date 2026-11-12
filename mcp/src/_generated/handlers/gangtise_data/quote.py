@@ -42,10 +42,8 @@ from .utils import (
     QUOTE_MINUTE_URL,
     QUOTE_REALTIME_URL,
     QUOTE_URL,
-    check_version,
     format_response,
-    normalize_securities_arg,
-)
+    normalize_securities_arg)
 from gangtise_core.auth import get_authorization_headers
 
 # 与 open 日 K 文档一致
@@ -1925,13 +1923,6 @@ def quote_data(
 
 def main():
     import argparse
-
-    try:
-        if not check_version():
-            update_sh = os.path.join(script_dir, "update.sh")
-            print(f"[WARNING] 存在 Gangtise data 版本更新，可以执行 {update_sh} 更新，请与用户确认是否更新\n")
-    except Exception:
-        print("[WARNING] 检查 Gangtise data 版本失败\n")
 
     parser = argparse.ArgumentParser(
         description="查询 A/港/美/指数行情（日K、分钟K、截面 snap）",
