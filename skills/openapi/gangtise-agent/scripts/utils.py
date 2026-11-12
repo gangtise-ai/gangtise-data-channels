@@ -20,6 +20,9 @@ import json
 import requests
 
 from .gts_auth import (
+    append_consumed_points_note,
+    append_consumed_points_to_saved_file,
+    apply_consumed_points,
     authorized_request,
     get_authorization_headers,
     get_authorization_token,
@@ -256,7 +259,8 @@ def _unique_result_path(process_dir: str, module_name: str, extension: str) -> s
 
 
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None, additional_message: str = ""):
-    # 保存 usage
+    points_note = apply_consumed_points(response)
+    # 保存 usage（含本次 Consumed-Point 汇总）
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     now = datetime.datetime.now().strftime("%H%M%S")
     usage_path = os.path.join(usage_dir, f"{today}.json")
@@ -286,7 +290,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
         if module_name == "security":
             data = pd.DataFrame(data_list)
             sample_data = data_to_md(data)
-            return "### 证券查询结果:\n\n" + sample_data
+            return append_consumed_points_note("### 证券查询结果:\n\n" + sample_data, points_note)
         if GTS_SAVE_FILE:
             extension = GTS_SAVE_EXTENSION
             if output_dir:
@@ -307,6 +311,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
                         _write_agent_row(f, row, type_name, method_name)
                         if i < len(data_list) - 1:
                             f.write("\n---\n\n")
+                append_consumed_points_to_saved_file(process_path, points_note)
 
             # 落盘时正文最多展示 2 条示例，完整结果见文件
             preview_n = 2
@@ -337,7 +342,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
         return_message += "\n\n" + "\n\n".join(sections)
     if additional_message:
         return_message += "\n" + additional_message
-    return return_message.strip()
+    return append_consumed_points_note(return_message.strip(), points_note)
 
 def _render_agent_items(
     data_list: List[Dict[str, Any]],

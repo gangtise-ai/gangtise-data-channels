@@ -16,6 +16,8 @@ import uuid
 from typing import Dict, List, Any, NoReturn, Optional
 import requests
 from .gts_auth import (
+    append_consumed_points_note,
+    apply_consumed_points,
     authorized_request,
     get_authorization_headers,
     get_authorization_token,
@@ -206,8 +208,10 @@ def format_response(
     usage: dict = None,
     output_dir: Optional[str] = None,
 ) -> str:
-    # 保存usage
-    usage = usage or {}
+    # 合并本次 HTTP Consumed-Point 到 usage，并追加到最终回复
+    carrier = {"usage": dict(usage or {})}
+    points_note = apply_consumed_points(carrier)
+    usage = dict(carrier.get("usage") or {})
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     now = datetime.datetime.now().strftime("%H%M%S")
     usage_path = os.path.join(usage_dir, f"{today}.json")
@@ -215,7 +219,7 @@ def format_response(
         if os.path.exists(usage_path):
             with open(usage_path, "r", encoding="utf-8") as f:
                 _usage = json.load(f)
-            if now in usage:
+            if now in _usage:
                 now_usage = add_usages([usage, _usage[now]])
             else:
                 now_usage = usage
@@ -236,9 +240,10 @@ def format_response(
         process_path = os.path.join(process_dir, f"{module_name}_{today}_{now}.{extension}")
         with open(process_path, "w", encoding="utf-8") as f:
             f.write(resp_text)
+        # json 结构不改；积分记在 .usage，并在回复中展示
         resp_text += f"\n\n工具调用结果已保存到文件：\n`{os.path.abspath(process_path)}`\n\n"
 
-    return resp_text
+    return append_consumed_points_note(resp_text, points_note)
 
 OPENAPI_SKILL_VERSION = "1.7.0"
 SKILL_CHECK_URL = "https://openapi.gangtise.com/application/skills-backend/version?skill=openapi"

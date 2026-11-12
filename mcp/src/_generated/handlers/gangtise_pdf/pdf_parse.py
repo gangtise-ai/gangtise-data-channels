@@ -21,8 +21,15 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import requests
-from gangtise_core.auth import authorized_request
-from gangtise_core.auth import authorized_request, get_authorization_headers, get_authorization_token, gangtise_domain
+from gangtise_core.auth import (
+    append_consumed_points_note,
+    append_consumed_points_to_saved_file,
+    apply_consumed_points,
+    authorized_request,
+    get_authorization_headers,
+    get_authorization_token,
+    gangtise_domain,
+)
 
 GANGTISE_TOOL_DOMAIN = os.getenv(
     "GANGTISE_TOOL_DOMAIN",
@@ -264,12 +271,15 @@ def _action_result(
                 md_path = _unpack_zip(zip_bytes, out, keep_zip=bool(keep_zip), zip_stem=stem)
             except Exception as e:
                 return f"解压失败：{e}\ntaskId=`{tid}`\noutput_dir=`{out}`"
-            return (
+            points_note = apply_consumed_points()
+            append_consumed_points_to_saved_file(str(md_path), points_note)
+            return append_consumed_points_note(
                 f"解析完成\n"
                 f"- taskId: `{tid}`\n"
                 f"- output_dir:\n`{out}`\n"
                 f"- markdown:\n`{md_path}`\n"
-                f"- images: `{out / 'images'}`（若 ZIP 含图片目录）"
+                f"- images: `{out / 'images'}`（若 ZIP 含图片目录）",
+                points_note,
             )
 
         if status == "error":
@@ -308,9 +318,11 @@ def pdf_parse(
     if act in ("submit", "parse", "upload"):
         if not pdf_path:
             return "错误：action=submit 时必须提供 pdf_path（PDF 绝对路径）"
-        return _action_submit(pdf_path, output_dir=output_dir)
+        text = _action_submit(pdf_path, output_dir=output_dir)
+        return append_consumed_points_note(text, apply_consumed_points())
     if act in ("result", "download", "fetch", "get"):
-        return _action_result(
+        # result 成功路径内部已 apply；失败/等待路径在此补齐
+        text = _action_result(
             task_id or "",
             output_dir=output_dir,
             pdf_path=pdf_path,
@@ -318,6 +330,9 @@ def pdf_parse(
             timeout=timeout,
             keep_zip=keep_zip,
         )
+        if "本次积分消耗" in (text or ""):
+            return text
+        return append_consumed_points_note(text, apply_consumed_points())
     return (
         f"错误：未知 action=`{action}`。可选：submit（提交解析）、result（下载结果）。"
     )

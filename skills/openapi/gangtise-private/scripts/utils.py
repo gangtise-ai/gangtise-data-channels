@@ -26,6 +26,8 @@ FILE_DEFAULT_LIMIT = {
 }
 
 from .gts_auth import (
+    append_consumed_points_to_saved_file,
+    apply_consumed_points,
     authorized_request,
     get_authorization_headers,
     get_authorization_token,
@@ -298,7 +300,8 @@ def format_response(
     additional_message: str = "",
 ):
     should_save = bool(output_dir) or GTS_SAVE_FILE
-    # 保存 usage
+    points_note = apply_consumed_points(response)
+    # 保存 usage（含本次 Consumed-Point 汇总）
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     now = datetime.datetime.now().strftime("%H%M%S")
     usage_path = os.path.join(usage_dir, f"{today}.json")
@@ -356,6 +359,7 @@ def format_response(
                     return err
                 df = pd.DataFrame(data)
                 df.to_csv(process_path, index=False)
+                append_consumed_points_to_saved_file(process_path, points_note)
                 n = len(df)
                 if n <= 6:
                     sample_range = list(range(n))
@@ -383,6 +387,7 @@ def format_response(
                             f.write(_format_file_record_text(file, method_name, module_name, output_dir))
                             if i < len(data) - 1:
                                 f.write("\n\n---\n\n")
+                    append_consumed_points_to_saved_file(process_path, points_note)
                 elif GTS_SAVE_EXTENSION == "json":
                     with open(process_path, "w", encoding="utf-8") as f:
                         json.dump(data, f, ensure_ascii=False)
@@ -392,6 +397,7 @@ def format_response(
                             f.write(_format_file_record_text(file, method_name, module_name, output_dir))
                             if i < len(data) - 1:
                                 f.write("\n\n---\n\n")
+                    append_consumed_points_to_saved_file(process_path, points_note)
                 # 落盘时正文最多展示 5 个 file 作为示例，完整结果见文件
                 preview_n = 5
                 preview = data[:preview_n]

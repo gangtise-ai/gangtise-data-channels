@@ -22,6 +22,8 @@ import requests
 import json
 
 from gangtise_core.auth import (
+    append_consumed_points_to_saved_file,
+    apply_consumed_points,
     authorized_request,
     get_authorization_headers,
     get_authorization_token,
@@ -221,8 +223,9 @@ def _unique_result_path(process_dir: str, module_name: str, extension: str) -> s
 
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None):
     should_save = bool(output_dir) or GTS_SAVE_FILE
+    points_note = apply_consumed_points(response)
 
-    # 保存usage
+    # 保存usage（含本次 Consumed-Point 汇总）
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     now = datetime.datetime.now().strftime("%H%M%S")
     if should_save and response.get("usage", None):
@@ -278,6 +281,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
                 data = pd.DataFrame(data)
                 if process_path:
                     data.to_csv(process_path, index=False)
+                    append_consumed_points_to_saved_file(process_path, points_note)
                 # ≤100 行全量展示；超出则正文展示前 3 + 后 3 行，完整数据在 csv
                 n = len(data)
                 if n <= 100:
@@ -317,6 +321,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
                 if process_path:
                     with open(process_path, "w", encoding="utf-8") as f:
                         f.write(content)
+                    append_consumed_points_to_saved_file(process_path, points_note)
                 save_bit = (
                     "\n\n已保存到md：\n`" + os.path.abspath(process_path) + "`\n\n---\n\n"
                     if process_path
@@ -341,6 +346,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
                             f.write(f"内容：\"\"\"\n{file['摘要']}\n\"\"\"")
                             if i < len(data) - 1:
                                 f.write("\n\n---\n\n")
+                    append_consumed_points_to_saved_file(process_path, points_note)
                 _sample_data = [file["标题"] for file in data]
                 sample_data = []
                 for _sample_data_item in _sample_data:

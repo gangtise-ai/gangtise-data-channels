@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
+from gangtise_core.auth import append_consumed_points_to_saved_file, apply_consumed_points
 from .utils import (
     GTS_SAVE_EXTENSION,
     GTS_SAVE_FILE,
@@ -409,7 +410,13 @@ def format_search_markdown(data: dict, preview_content: bool = False) -> str:
     return "\n".join(lines).strip()
 
 
-def _save_result(text: str, data: dict, output_dir: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
+def _save_result(
+    text: str,
+    data: dict,
+    output_dir: Optional[str],
+    *,
+    points_note: str = "",
+) -> Tuple[Optional[str], Optional[str]]:
     extension = GTS_SAVE_EXTENSION if GTS_SAVE_EXTENSION in ("md", "json") else "md"
     path, err = alloc_result_path("web_search", "web_search", extension, output_dir)
     if err or not path:
@@ -423,11 +430,14 @@ def _save_result(text: str, data: dict, output_dir: Optional[str]) -> Tuple[Opti
                         "total": data.get("total"),
                         "hints": data.get("hints") or [],
                         "list": data.get("list") or [],
+                        **({"consumed_point": data.get("consumed_point")} if data.get("consumed_point") is not None else {}),
                     }
                 )
             )
         else:
             handle.write(text)
+    if extension == "md":
+        append_consumed_points_to_saved_file(path, points_note)
     return path, None
 
 
@@ -436,6 +446,7 @@ def render_result(
     *,
     as_json: bool = False,
     output_dir: Optional[str] = None,
+    points_note: str = "",
 ) -> str:
     if result.get("state") != "success":
         message = "调用 Gangtise Open API 失败，错误信息：" + str(result.get("message") or "")
@@ -454,7 +465,10 @@ def render_result(
     full_markdown = format_search_markdown(data, preview_content=False)
     saved_path = None
     if GTS_SAVE_FILE:
-        saved_path, err = _save_result(full_markdown, data, output_dir)
+        save_data = dict(data)
+        if isinstance(result.get("usage"), dict) and result["usage"].get("consumed_point") is not None:
+            save_data["consumed_point"] = result["usage"]["consumed_point"]
+        saved_path, err = _save_result(full_markdown, save_data, output_dir, points_note=points_note)
         if err:
             return err
 
@@ -507,12 +521,13 @@ def web_search(
         include_content=include_content,
         max_content_chars=max_content_chars,
     )
+    points_note = apply_consumed_points(result)
     if result.get("state") != "success":
         return failure_result(result)
     items = (result.get("data") or {}).get("list") or []
     return success_result(
-        render_result(result, output_dir=output_dir),
-        {"data": [{"type": "data", "data": items}]},
+        render_result(result, output_dir=output_dir, points_note=points_note),
+        {"data": [{"type": "data", "data": items}], "usage": dict(result.get("usage") or {})},
     )
 
 

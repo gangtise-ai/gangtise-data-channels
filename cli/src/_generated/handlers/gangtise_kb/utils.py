@@ -24,6 +24,8 @@ import requests
 # 通过 ak/sk 获取 临时 authorization
 
 from gangtise_core.auth import (
+    append_consumed_points_to_saved_file,
+    apply_consumed_points,
     authorized_request,
     get_authorization_headers,
     get_authorization_token,
@@ -248,8 +250,9 @@ def _unique_result_path(process_dir: str, module_name: str, extension: str) -> s
 
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None, additional_message: str = ""):
     should_save = bool(output_dir) or GTS_SAVE_FILE
+    points_note = apply_consumed_points(response)
 
-    # 保存usage
+    # 保存usage（含本次 Consumed-Point 汇总）
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     now = datetime.datetime.now().strftime("%H%M%S")
     usage_path = os.path.join(usage_dir, f"{today}.json")
@@ -307,6 +310,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
                             f.write(f"file-id：{file['类型ID']}")
                             if i < len(data) - 1:
                                 f.write("\n\n---\n\n")
+                    append_consumed_points_to_saved_file(process_path, points_note)
                 elif GTS_SAVE_EXTENSION == "json":
                     with open(process_path, "w", encoding="utf-8") as f:
                         json.dump(

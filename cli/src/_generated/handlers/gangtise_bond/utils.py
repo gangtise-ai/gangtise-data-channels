@@ -22,6 +22,8 @@ import requests
 
 
 from gangtise_core.auth import (
+    append_consumed_points_to_saved_file,
+    apply_consumed_points,
     authorized_request,
     get_authorization_headers,
     get_authorization_token,
@@ -209,6 +211,7 @@ PREVIEW_MAX_CELL_LENGTH = 60
 
 
 def format_response(response: dict, method_name: str, output_dir: Optional[str] = None):
+    points_note = apply_consumed_points(response)
     if response.get("state") != "success":
         return failure_result(response)
 
@@ -220,6 +223,7 @@ def format_response(response: dict, method_name: str, output_dir: Optional[str] 
         if err:
             return failure_result({"message": err})
         data.to_csv(process_path, index=False)
+        append_consumed_points_to_saved_file(process_path, points_note)
         # ≤100 行全量展示；超出则正文展示前 3 + 后 3 行，完整数据在 csv
         n = len(data)
         if n <= 100:

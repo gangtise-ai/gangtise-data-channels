@@ -3,8 +3,13 @@
 """Turn legacy format_response dicts into Result / ApiError."""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from .auth import (
+    append_consumed_points_note,
+    apply_consumed_points,
+    format_consumed_points_note,
+)
 from .envelope import OK_CODES
 from .errors import ApiError, PartialResultError
 from .result import Result, SavedFile
@@ -36,13 +41,27 @@ _PARAM_HINTS = (
 )
 
 
+def _usage_with_consumed_points(response: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+    """合并本次 HTTP Consumed-Point 到 usage，并生成回复文案。"""
+    note = apply_consumed_points(response)
+    usage = dict(response.get("usage") or {})
+    if not note and usage.get("consumed_point") is not None:
+        try:
+            note = format_consumed_points_note(float(usage["consumed_point"]), seen=True)
+        except (TypeError, ValueError):
+            note = ""
+    return usage, note
+
+
 def failure_result(response: Dict[str, Any]) -> Result:
     """Map a legacy `{state: error}` payload.
 
     Vacuum (no rows) → success + empty data, CLI exit 0.
     Server code / auth / params → raise ApiError (exit 1 or 2).
     """
+    usage, note = _usage_with_consumed_points(response)
     msg = str(response.get("message") or response.get("msg") or "调用失败")
+    msg = append_consumed_points_note(msg, note)
     code = str(response.get("code") or "")
     http = int(response.get("http") or 0)
     trace_id = str(response.get("traceId") or response.get("trace_id") or "")
@@ -53,7 +72,7 @@ def failure_result(response: Dict[str, Any]) -> Result:
     if "未配置" in msg and "授权" in msg:
         raise ApiError(msg, code="999011", http=http, trace_id=trace_id, body=response)
     if any(h in msg for h in _EMPTY_HINTS):
-        return Result.success(text=msg, data=[])
+        return Result.success(text=msg, data=[], usage=usage)
     raise ApiError(msg, code=code, http=http, trace_id=trace_id, body=response)
 
 
@@ -72,11 +91,13 @@ def success_result(
         data = tables[0]
     elif tables:
         data = tables
+    usage, note = _usage_with_consumed_points(response)
+    text = append_consumed_points_note((markdown or "").strip(), note)
     result = Result.success(
-        text=(markdown or "").strip(),
+        text=text,
         data=data,
         files=list(files or []),
-        usage=dict(response.get("usage") or {}),
+        usage=usage,
     )
     partial = response.get("partial")
     if partial:

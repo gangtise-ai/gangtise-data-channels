@@ -15,6 +15,7 @@ CLI / MCP 同步时，`from .gts_auth import` 会被改写为 `from gangtise_cor
 """
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import json
 import os
@@ -27,13 +28,29 @@ from typing import Any, Dict, Optional, Tuple
 import requests
 
 __all__ = [
+    "append_consumed_points_note",
+    "append_consumed_points_to_saved_file",
+    "apply_consumed_points",
     "authorized_request",
+    "consumed_points_seen",
+    "format_consumed_points_note",
     "gangtise_domain",
     "get_authorization_headers",
     "get_authorization_token",
+    "get_consumed_points",
     "get_headers_extra",
     "invalidate_authorization",
+    "take_consumed_points",
 ]
+
+# OpenAPI 响应头：本次请求实扣积分（尚未全量上线时可能缺失）
+CONSUMED_POINT_HEADER = "Consumed-Point"
+_consumed_points_total: contextvars.ContextVar[float] = contextvars.ContextVar(
+    "gts_consumed_points_total", default=0.0
+)
+_consumed_points_seen: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "gts_consumed_points_seen", default=False
+)
 
 _PROD_PUBLIC_BASE = "https://openapi.gangtise.com/application"
 AUTH_EXPIRED_CODES = frozenset({"8000013", "8000014", "999002"})
@@ -311,6 +328,98 @@ def _user_agent() -> str:
     return _env("GTS_USER_AGENT") or "gangtise-skill"
 
 
+def _parse_consumed_point_header(response: requests.Response) -> Optional[float]:
+    """从响应头解析 Consumed-Point；缺失或非法返回 None（不计入 seen）。"""
+    raw = response.headers.get(CONSUMED_POINT_HEADER)
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _record_consumed_point(response: requests.Response) -> None:
+    value = _parse_consumed_point_header(response)
+    if value is None:
+        return
+    _consumed_points_seen.set(True)
+    _consumed_points_total.set(float(_consumed_points_total.get() or 0.0) + value)
+
+
+def get_consumed_points() -> float:
+    return float(_consumed_points_total.get() or 0.0)
+
+
+def consumed_points_seen() -> bool:
+    return bool(_consumed_points_seen.get())
+
+
+def take_consumed_points() -> Tuple[float, bool]:
+    """取出并清零本次脚本调用累计的 Consumed-Point。返回 (total, seen)。"""
+    total = get_consumed_points()
+    seen = consumed_points_seen()
+    _consumed_points_total.set(0.0)
+    _consumed_points_seen.set(False)
+    return total, seen
+
+
+def format_consumed_points_note(total: float, *, seen: bool = True) -> str:
+    if not seen:
+        return ""
+    if float(total) == int(total):
+        display = str(int(total))
+    else:
+        display = ("%f" % float(total)).rstrip("0").rstrip(".")
+    return f"本次积分消耗：{display}"
+
+
+def append_consumed_points_note(text: str, note: str) -> str:
+    note = (note or "").strip()
+    if not note:
+        return text or ""
+    base = (text or "").rstrip()
+    if note in base:
+        return base
+    return f"{base}\n\n{note}" if base else note
+
+
+def apply_consumed_points(response: Optional[Dict[str, Any]] = None) -> str:
+    """取出累计积分，写入 response['usage']['consumed_point']，返回展示文案（可能为空）。"""
+    total, seen = take_consumed_points()
+    note = format_consumed_points_note(total, seen=seen)
+    if response is not None and seen:
+        usage = dict(response.get("usage") or {})
+        prev = usage.get("consumed_point")
+        try:
+            prev_f = float(prev) if prev is not None else 0.0
+        except (TypeError, ValueError):
+            prev_f = 0.0
+        usage["consumed_point"] = prev_f + total
+        response["usage"] = usage
+    return note
+
+
+def append_consumed_points_to_saved_file(path: str, note: str) -> None:
+    """把积分说明追加到已落盘结果文件（md 正文 / csv 注释行；json 不改结构，改走 .usage）。"""
+    note = (note or "").strip()
+    if not note or not path:
+        return
+    lower = path.lower()
+    try:
+        if lower.endswith(".md"):
+            with open(path, "a", encoding="utf-8") as f:
+                f.write("\n\n" + note + "\n")
+        elif lower.endswith(".csv"):
+            with open(path, "a", encoding="utf-8") as f:
+                f.write("\n# " + note + "\n")
+    except OSError:
+        return
+
+
 def authorized_request(method: str, url: Any, *, retry_on_auth: bool = True, **kwargs: Any) -> requests.Response:
     """带鉴权头发请求；token 失效时换 token 重发一次（直接配置的 token 无法刷新，不重发）。"""
     headers = dict(kwargs.pop("headers", None) or {})
@@ -320,11 +429,15 @@ def authorized_request(method: str, url: Any, *, retry_on_auth: bool = True, **k
     target = str(url)
     response = requests.request(method, target, headers=headers, timeout=timeout, **kwargs)
     if not retry_on_auth or _env_authorization() or not _is_auth_error(response):
+        _record_consumed_point(response)
         return response
     stale = headers.get("Authorization", "")
     with _lock:
         session = _build_session(force=True, stale_token=stale)
     if not session or session.get("authorization") == stale:
+        _record_consumed_point(response)
         return response
     headers.update(get_authorization_headers())
-    return requests.request(method, target, headers=headers, timeout=timeout, **kwargs)
+    response = requests.request(method, target, headers=headers, timeout=timeout, **kwargs)
+    _record_consumed_point(response)
+    return response
