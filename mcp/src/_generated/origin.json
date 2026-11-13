@@ -4,7 +4,7 @@
   "sources": {
     "core/src/gangtise_core/__init__.py": "fa11da9445a8e9479b1b252f19acaa477624bffa556c84018c314d284279600d",
     "core/src/gangtise_core/args.py": "fcdb90dbfc758d02ff11144631d867d56f59bbea3f0bdba94810e4da66e546e9",
-    "core/src/gangtise_core/auth.py": "33a9d5802289b51f6fcbec90cedb8b9e804661a2c2df7fc6c1519f856aa776b0",
+    "core/src/gangtise_core/auth.py": "5917bacbb2fa5e0bb3b129c57de84f6bcb1f0136f5f848e0c4e3e9c50a9902ae",
     "core/src/gangtise_core/billing.py": "e04f22cb980bbcc4b1f1a1f13e4a8709e4b851211aa17cfce9d067139a918498",
     "core/src/gangtise_core/bootstrap.py": "c4b9f0c763cdde2c028b6512655de93651e2598064d6ff130695c0edfe626930",
     "core/src/gangtise_core/concurrency.py": "779192d2fe28913e5c1c19fab08ee0d3f3a3f2e66f70be184ad0b864f809d8f8",

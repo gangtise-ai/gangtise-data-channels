@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """将本仓库 skills 同步到 Hermes shared/skills。
 
-默认：只同步目标目录里已有、且本仓库能解析到源的 skill。
-可用 --skills 显式指定名称，或用分类名批量同步（含 research）。
+默认：同步目标目录里已有、且本仓库能解析到源的 skill，并始终带上 system 系列
+（即使目标里还没有）。可用 --skills 显式指定名称，或用分类名批量同步。
+
+注意：Hermes 容器内 /shared/skills 不是宿主机目录的实时挂载，
+docker_start.sh / docker_install.sh 通过 docker cp 灌入。
+仅同步宿主机 shared/skills 不会更新正在运行的容器；
+需要 --docker-cp（或重新执行 docker_start）才会进容器。
 
 示例：
   python3 scripts/sync_hermes_skills.py
   python3 scripts/sync_hermes_skills.py --skills gangtise-data,gangtise-file
   python3 scripts/sync_hermes_skills.py --skills research
   python3 scripts/sync_hermes_skills.py --skills openapi,system --dry-run
+  python3 scripts/sync_hermes_skills.py --skills openapi --docker-cp
   python3 scripts/sync_hermes_skills.py --dest /path/to/skills
 """
 from __future__ import annotations
 
 import argparse
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set
@@ -25,6 +32,9 @@ DEFAULT_DEST = Path.home() / ".hermes/docker-utils/shared/skills"
 
 # 解析同名 skill 时的优先级（一般不会撞名）
 CATEGORIES: Sequence[str] = ("openapi", "system", "tools", "research", "others")
+
+# 未指定 --skills 时，除目标已有目录外，始终同步这些分类（即使目标里还没有）
+ALWAYS_SYNC_CATEGORIES: Sequence[str] = ("system",)
 
 IGNORE_NAMES = {
     "__pycache__",
@@ -114,6 +124,47 @@ def sync_one(src: Path, dest_skill: Path, *, dry_run: bool) -> None:
     print(f"  OK   {src.relative_to(ROOT)}  →  {dest_skill}")
 
 
+def docker_cp_skills(
+    dest: Path,
+    names: Sequence[str],
+    *,
+    container: str,
+    dry_run: bool,
+) -> None:
+    """把宿主机 dest 下的 skill 灌进容器 /shared/skills（与 docker_start.sh 一致）。"""
+    if dry_run:
+        for name in names:
+            print(f"  DRY  docker cp {dest / name}/.  {container}:/shared/skills/{name}/")
+        return
+    # 确认容器在跑
+    probe = subprocess.run(
+        ["docker", "inspect", "-f", "{{.State.Running}}", container],
+        capture_output=True,
+        text=True,
+    )
+    if probe.returncode != 0 or probe.stdout.strip() != "true":
+        raise SystemExit(f"容器「{container}」未运行，无法 --docker-cp")
+
+    for name in names:
+        src = dest / name
+        if not src.is_dir():
+            print(f"  SKIP docker cp：宿主机无目录 {src}")
+            continue
+        subprocess.run(
+            ["docker", "exec", "-u", "root", container, "mkdir", "-p", f"/shared/skills/{name}"],
+            check=True,
+        )
+        subprocess.run(
+            ["docker", "cp", f"{src}/.", f"{container}:/shared/skills/{name}/"],
+            check=True,
+        )
+        print(f"  OK   docker cp → {container}:/shared/skills/{name}/")
+    subprocess.run(
+        ["docker", "exec", "-u", "root", container, "chmod", "-R", "a+rX", "/shared/skills"],
+        check=True,
+    )
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="同步本仓库 skills 到 Hermes shared/skills",
@@ -132,13 +183,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help=(
             "要同步的 skill 名或分类名，逗号/空格分隔。"
             f"分类：{', '.join(CATEGORIES)}。"
-            "省略则只同步目标目录已有、且仓库有源的 skill。"
+            "省略则同步目标目录已有且仓库有源的 skill，"
+            f"并始终带上 {', '.join(ALWAYS_SYNC_CATEGORIES)}。"
         ),
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="只打印将要同步的映射，不写盘",
+    )
+    parser.add_argument(
+        "--docker-cp",
+        action="store_true",
+        help="同步宿主机后，再 docker cp 进运行中的 Hermes 容器 /shared/skills",
+    )
+    parser.add_argument(
+        "--container",
+        default="hermes",
+        help="--docker-cp 目标容器名（默认 hermes）",
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
@@ -155,6 +217,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         missing = [n for n in list_dest_skills(dest) if n not in index]
         if missing:
             print(f"跳过目标中无仓库源的目录：{', '.join(missing)}")
+        # system 等 ALWAYS_SYNC_CATEGORIES：目标里没有也要同步进去
+        seen = set(names)
+        for cat in ALWAYS_SYNC_CATEGORIES:
+            for name in list_category_skills(cat):
+                if name in index and name not in seen:
+                    seen.add(name)
+                    names.append(name)
 
     if not names:
         print("没有需要同步的 skill。")
@@ -166,6 +235,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"同步 {len(names)} 个 skill → {dest}" + (" (dry-run)" if args.dry_run else ""))
     for name in names:
         sync_one(index[name], dest / name, dry_run=args.dry_run)
+
+    if args.docker_cp:
+        print(f"docker cp → 容器 {args.container}:/shared/skills" + (" (dry-run)" if args.dry_run else ""))
+        docker_cp_skills(dest, names, container=args.container, dry_run=args.dry_run)
+
     print("完成")
     return 0
 

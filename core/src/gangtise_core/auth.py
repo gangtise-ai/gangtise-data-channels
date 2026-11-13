@@ -637,10 +637,13 @@ def _session_headers_extra() -> Dict[str, str]:
 
 
 def get_headers_extra() -> Dict[str, str]:
-    """下游业务头：请求透传优先，其次 loginV2 会话。"""
+    """下游业务头：请求透传优先，其次 loginV2 会话；若存在 TRACE_ID，附加 traceid。"""
     out = get_request_headers_extra()
     for key, value in _session_headers_extra().items():
         out.setdefault(key, value)
+    trace_id = (os.getenv("TRACE_ID") or "").strip()
+    if trace_id:
+        out.setdefault("traceid", trace_id)
     return out
 
 

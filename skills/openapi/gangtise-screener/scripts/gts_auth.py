@@ -289,7 +289,8 @@ def get_authorization_token() -> Optional[str]:
 
 
 def get_headers_extra() -> Dict[str, str]:
-    """下游业务头 uid / tenantid / productcode：loginV2 会话优先，其次环境变量 UID / TENANTID / PRODUCTCODE。"""
+    """下游业务头 uid / tenantid / productcode：loginV2 会话优先，其次环境变量 UID / TENANTID / PRODUCTCODE。
+    若存在 TRACE_ID，附加 traceid。"""
     session: Optional[Dict[str, Any]] = None
     if not _env_authorization():
         with _lock:
@@ -299,6 +300,9 @@ def get_headers_extra() -> Dict[str, str]:
         value = (session or {}).get(key) or _env(env_key)
         if value:
             out[key] = str(value)
+    trace_id = _env("TRACE_ID")
+    if trace_id:
+        out["traceid"] = trace_id
     return out
 
 
